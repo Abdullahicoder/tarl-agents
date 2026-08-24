@@ -1,10 +1,18 @@
+import os
 from typing import List
 from google import genai
 from google.genai import types
 from shared.models.models import Student, ClassGroup
 from pydantic import BaseModel
+from dotenv import load_dotenv
 
-client = genai.Client()
+load_dotenv()
+
+project_id = os.getenv("GCP_PROJECT_ID", "vertical-theory-383513")
+location = os.getenv("GCP_LOCATION", "us-central1")
+
+# Initialize Vertex AI client using Application Default Credentials
+client = genai.Client(vertexai=True, project=project_id, location=location)
 
 class GroupingRecommendation(BaseModel):
     groups: List[ClassGroup]
@@ -27,7 +35,7 @@ def generate_classroom_groups(students: List[Student]) -> GroupingRecommendation
         model="gemini-2.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
-            system_instruction="You are a expert TaRL Classroom Manager assisting primary school teachers with instructional grouping.",
+            system_instruction="You are an expert TaRL Classroom Manager assisting primary school teachers with instructional grouping.",
             response_mime_type="application/json",
             response_schema=GroupingRecommendation,
             temperature=0.2

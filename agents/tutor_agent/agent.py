@@ -2,8 +2,15 @@ import os
 from google import genai
 from google.genai import types
 from shared.models.models import Student, ExerciseResponse
+from dotenv import load_dotenv
 
-client = genai.Client()
+load_dotenv()
+
+project_id = os.getenv("GCP_PROJECT_ID", "vertical-theory-383513")
+location = os.getenv("GCP_LOCATION", "us-central1")
+
+# Initialize Vertex AI client using Application Default Credentials
+client = genai.Client(vertexai=True, project=project_id, location=location)
 
 SYSTEM_PROMPT = """
 You are a bilingual (Swahili & English) TaRL (Teaching at the Right Level) tutor for students in East Africa.
