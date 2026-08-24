@@ -5,42 +5,150 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TaRL Learning Agents Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-slate-100 min-h-screen text-slate-800 font-sans">
+<body class="bg-slate-100 min-h-screen text-slate-800 font-sans" onload="loadStudents()">
     <div class="max-w-4xl mx-auto p-6">
         <header class="text-center py-6">
             <h1 class="text-3xl font-bold text-indigo-700">🌍 TaRL Learning Agents</h1>
-            <p class="text-slate-600 mt-2">Bilingual AI Tutor & Skill-Based Classroom Manager</p>
+            <p class="text-slate-600 mt-2">Bilingual AI Tutor, Skill Assessor & Progress Visualizer</p>
         </header>
 
         <!-- Navigation Tabs -->
-        <div class="flex justify-center border-b border-slate-300 mb-6">
-            <button id="tab-student" onclick="switchTab('student')" class="px-6 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600">📱 Student Portal</button>
-            <button id="tab-teacher" onclick="switchTab('teacher')" class="px-6 py-2 font-semibold text-slate-500 hover:text-indigo-600">📊 Teacher Co-Pilot</button>
+        <div class="flex flex-wrap justify-center border-b border-slate-300 mb-6 gap-1">
+            <button id="tab-student" onclick="switchTab('student')" class="px-4 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600">📱 Student Portal</button>
+            <button id="tab-register" onclick="switchTab('register')" class="px-4 py-2 font-semibold text-slate-500 hover:text-indigo-600">📝 Register</button>
+            <button id="tab-assessment" onclick="switchTab('assessment')" class="px-4 py-2 font-semibold text-slate-500 hover:text-indigo-600">🔍 AI Assessment</button>
+            <button id="tab-progress" onclick="switchTab('progress')" class="px-4 py-2 font-semibold text-slate-500 hover:text-indigo-600">📈 Progress Tracker</button>
+            <button id="tab-teacher" onclick="switchTab('teacher')" class="px-4 py-2 font-semibold text-slate-500 hover:text-indigo-600">📊 Teacher Co-Pilot</button>
         </div>
 
-        <!-- Student View -->
+        <!-- Student Portal View -->
         <div id="view-student" class="space-y-6">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                 <label class="block text-sm font-medium text-slate-700 mb-2">Select Student:</label>
-                <select id="student-select" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                    <option value="s1">Amina (Age 4, Literacy: Beginner)</option>
-                    <option value="s2">Samuel (Age 10, Literacy: Beginner)</option>
-                    <option value="s3">Kofi (Age 9, Literacy: Word)</option>
-                    <option value="s4">Zainab (Age 8, Literacy: Story)</option>
+                <select id="student-select" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                    <option value="">Loading registered students...</option>
                 </select>
-                <button onclick="fetchExercise()" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-md transition">
+                <button id="btn-exercise" onclick="fetchExercise()" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-md transition">
                     Start AI Exercise
                 </button>
             </div>
 
             <div id="exercise-card" class="hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
-                <div class="bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-500">
+                <div id="ex-question-box" class="bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-500">
                     <p id="ex-question" class="text-lg font-medium text-indigo-950"></p>
                 </div>
                 <div id="ex-options" class="grid grid-cols-2 gap-3"></div>
-                <div id="ex-hints" class="bg-amber-50 p-3 rounded-lg text-amber-800 text-sm italic"></div>
+                <div id="ex-hints" class="bg-amber-50 p-3 rounded-lg text-amber-800 text-sm italic hidden"></div>
                 <div id="ex-encouragement" class="bg-emerald-50 p-3 rounded-lg text-emerald-800 font-semibold text-center hidden"></div>
+            </div>
+        </div>
+
+        <!-- Registration View -->
+        <div id="view-register" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-xl font-bold text-slate-800 mb-4">Register New Student</h2>
+                <form id="reg-form" onsubmit="registerStudent(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                        <input type="text" id="reg-name" required placeholder="e.g. Juma Bakari" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Age</label>
+                        <input type="number" id="reg-age" min="3" max="18" required placeholder="e.g. 7" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Assessed Literacy Level</label>
+                            <select id="reg-literacy" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                                <option value="Beginner">Beginner (Sounds & Alphabet)</option>
+                                <option value="Letter">Letter (Recognizes Letters)</option>
+                                <option value="Word">Word (Reads Simple Words)</option>
+                                <option value="Paragraph">Paragraph (Reads Paragraphs)</option>
+                                <option value="Story">Story (Reads Stories)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Assessed Numeracy Level</label>
+                            <select id="reg-numeracy" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                                <option value="Beginner">Beginner (Recognizes Shapes)</option>
+                                <option value="Single Digit">Single Digit (Counts 1-9)</option>
+                                <option value="Double Digit">Double Digit (Counts 10-99)</option>
+                                <option value="Addition">Addition (Simple Sums)</option>
+                                <option value="Subtraction">Subtraction (Simple Minus)</option>
+                                <option value="Multiplication">Multiplication</option>
+                                <option value="Division">Division</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" id="btn-reg" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg shadow-md transition">
+                        Register Student to Firestore
+                    </button>
+                    <div id="reg-status" class="hidden p-3 rounded-lg text-center font-medium"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Assessment View -->
+        <div id="view-assessment" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-xl font-bold text-slate-800 mb-2">Student Evaluation & Progression</h2>
+                <p class="text-slate-600 text-sm mb-4">Enter teacher observations or quiz results to update student skill levels using Gemini 2.5 Flash.</p>
+                <form id="assess-form" onsubmit="runAssessment(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Select Student:</label>
+                        <select id="assess-student-select" required class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="">Loading students...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Teacher Observation / Diagnostic Test Result:</label>
+                        <textarea id="assess-observation" required rows="3" placeholder="e.g. Student correctly identified letter sounds 'm', 'a', and 't', and read simple 3-letter words without help." class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+                    <button type="submit" id="btn-assess" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg shadow-md transition">
+                        Run Assessment & Update Profile
+                    </button>
+                </form>
+            </div>
+
+            <div id="assess-results" class="hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                <h3 class="text-lg font-bold text-purple-900 border-b pb-2">Diagnostic Assessment Report</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <span class="text-xs uppercase font-bold text-purple-600 tracking-wider">Recommended Literacy</span>
+                        <p id="res-literacy" class="text-xl font-bold text-purple-950 mt-1"></p>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <span class="text-xs uppercase font-bold text-purple-600 tracking-wider">Recommended Numeracy</span>
+                        <p id="res-numeracy" class="text-xl font-bold text-purple-950 mt-1"></p>
+                    </div>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
+                    <p class="font-semibold text-slate-700">Swahili Feedback:</p>
+                    <p id="res-feedback-sw" class="text-slate-800 italic bg-white p-3 rounded border"></p>
+                    <p class="font-semibold text-slate-700 mt-2">English Feedback:</p>
+                    <p id="res-feedback-en" class="text-slate-800 italic bg-white p-3 rounded border"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Tracker View -->
+        <div id="view-progress" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-xl font-bold text-slate-800 mb-2">Student Progression Chart</h2>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Select Student to View History:</label>
+                <select id="progress-student-select" onchange="renderProgressChart()" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                    <option value="">Loading students...</option>
+                </select>
+            </div>
+
+            <div id="chart-card" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                <canvas id="progressChart" height="150"></canvas>
+                <div id="history-log" class="mt-6 border-t pt-4">
+                    <h4 class="font-bold text-slate-700 mb-2">Assessment Milestones Log</h4>
+                    <ul id="history-list" class="space-y-2 text-sm text-slate-600"></ul>
+                </div>
             </div>
         </div>
 
@@ -49,7 +157,7 @@
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
                 <h2 class="text-xl font-bold mb-2">Classroom Skill Grouping</h2>
                 <p class="text-slate-600 text-sm mb-4">Analyze Firestore student data and generate TaRL grouping recommendations.</p>
-                <button onclick="generateGroups()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-lg shadow-md transition">
+                <button id="btn-group" onclick="generateGroups()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-lg shadow-md transition">
                     Run Skill Grouping
                 </button>
             </div>
@@ -62,59 +170,284 @@
     </div>
 
     <script>
+        let chartInstance = null;
+        let globalStudents = [];
+
+        const literacyMap = { "Beginner": 1, "Letter": 2, "Word": 3, "Paragraph": 4, "Story": 5 };
+        const numeracyMap = { "Beginner": 1, "Single Digit": 2, "Double Digit": 3, "Addition": 4, "Subtraction": 5, "Multiplication": 6, "Division": 7 };
+
         function switchTab(tab) {
-            document.getElementById('view-student').classList.toggle('hidden', tab !== 'student');
-            document.getElementById('view-teacher').classList.toggle('hidden', tab !== 'teacher');
-            document.getElementById('tab-student').className = tab === 'student' ? 'px-6 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600' : 'px-6 py-2 font-semibold text-slate-500 hover:text-indigo-600';
-            document.getElementById('tab-teacher').className = tab === 'teacher' ? 'px-6 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600' : 'px-6 py-2 font-semibold text-slate-500 hover:text-indigo-600';
+            const tabs = ['student', 'register', 'assessment', 'progress', 'teacher'];
+            tabs.forEach(t => {
+                document.getElementById(`view-${t}`).classList.toggle('hidden', t !== tab);
+                const btn = document.getElementById(`tab-${t}`);
+                btn.className = t === tab 
+                    ? 'px-4 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600' 
+                    : 'px-4 py-2 font-semibold text-slate-500 hover:text-indigo-600';
+            });
+            if (tab === 'progress') renderProgressChart();
+        }
+
+        async function loadStudents() {
+            try {
+                const res = await fetch('/students');
+                globalStudents = await res.json();
+                
+                const select1 = document.getElementById('student-select');
+                const select2 = document.getElementById('assess-student-select');
+                const select3 = document.getElementById('progress-student-select');
+                
+                [select1, select2, select3].forEach(s => s.innerHTML = '');
+
+                if (globalStudents.length === 0) {
+                    const emptyOpt = '<option value="">No students found. Register one first!</option>';
+                    select1.innerHTML = emptyOpt; select2.innerHTML = emptyOpt; select3.innerHTML = emptyOpt;
+                    return;
+                }
+
+                globalStudents.forEach(s => {
+                    const text = `${s.name} (Age ${s.age}, Literacy: ${s.literacy_level}, Numeracy: ${s.numeracy_level})`;
+                    [select1, select2, select3].forEach(sel => {
+                        const opt = document.createElement('option');
+                        opt.value = s.id; opt.innerText = text;
+                        sel.appendChild(opt);
+                    });
+                });
+            } catch (err) {
+                console.error('Failed to load students:', err);
+            }
+        }
+
+        async function renderProgressChart() {
+            const studentId = document.getElementById('progress-student-select').value;
+            if (!studentId) return;
+
+            try {
+                const res = await fetch(`/students/${studentId}/progress`);
+                const student = await res.json();
+                const history = student.history || [];
+
+                const labels = history.map(h => h.timestamp);
+                const literacyData = history.map(h => literacyMap[h.literacy_level] || 1);
+                const numeracyData = history.map(h => numeracyMap[h.numeracy_level] || 1);
+
+                const ctx = document.getElementById('progressChart').getContext('2d');
+                
+                if (chartInstance) chartInstance.destroy();
+
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels.length ? labels : ['Registration'],
+                        datasets: [
+                            {
+                                label: 'Literacy Level (1: Beginner -> 5: Story)',
+                                data: literacyData.length ? literacyData : [1],
+                                borderColor: '#6366f1',
+                                backgroundColor: '#6366f122',
+                                tension: 0.3,
+                                fill: true
+                            },
+                            {
+                                label: 'Numeracy Level (1: Beginner -> 7: Division)',
+                                data: numeracyData.length ? numeracyData : [1],
+                                borderColor: '#10b981',
+                                backgroundColor: '#10b98122',
+                                tension: 0.3,
+                                fill: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { min: 1, max: 7, ticks: { stepSize: 1 } }
+                        }
+                    }
+                });
+
+                const list = document.getElementById('history-list');
+                list.innerHTML = '';
+                history.reverse().forEach(h => {
+                    const li = document.createElement('li');
+                    li.className = 'bg-slate-50 p-3 rounded border border-slate-200';
+                    li.innerHTML = `<strong>${h.timestamp}</strong> - Literacy: <span class="text-indigo-600 font-semibold">${h.literacy_level}</span> | Numeracy: <span class="text-emerald-600 font-semibold">${h.numeracy_level}</span> <br><span class="text-xs text-slate-500">${h.note || ''}</span>`;
+                    list.appendChild(li);
+                });
+            } catch (err) {
+                console.error('Failed to render progress chart:', err);
+            }
+        }
+
+        async function registerStudent(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-reg');
+            const status = document.getElementById('reg-status');
+            
+            const studentData = {
+                id: 's_' + Date.now(),
+                name: document.getElementById('reg-name').value,
+                age: parseInt(document.getElementById('reg-age').value),
+                literacy_level: document.getElementById('reg-literacy').value,
+                numeracy_level: document.getElementById('reg-numeracy').value
+            };
+
+            btn.disabled = true;
+            status.className = 'p-3 rounded-lg text-center font-medium bg-blue-50 text-blue-700 block';
+            status.innerText = 'Saving student profile to Firestore...';
+
+            try {
+                const res = await fetch('/students', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(studentData)
+                });
+
+                if (res.ok) {
+                    status.className = 'p-3 rounded-lg text-center font-medium bg-emerald-50 text-emerald-800 block';
+                    status.innerText = `✅ Registered ${studentData.name} successfully!`;
+                    document.getElementById('reg-form').reset();
+                    await loadStudents();
+                } else {
+                    const err = await res.json();
+                    status.className = 'p-3 rounded-lg text-center font-medium bg-red-50 text-red-700 block';
+                    let msg = typeof err.detail === "object" ? JSON.stringify(err.detail) : (err.detail || "Server error"); status.innerText = "❌ Failed: " + msg;
+                }
+            } catch (err) {
+                status.className = 'p-3 rounded-lg text-center font-medium bg-red-50 text-red-700 block';
+                status.innerText = '❌ Network error connecting to backend.';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function runAssessment(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-assess');
+            const resultsCard = document.getElementById('assess-results');
+            
+            const reqData = {
+                student_id: document.getElementById('assess-student-select').value,
+                test_observation: document.getElementById('assess-observation').value
+            };
+
+            btn.disabled = true;
+            btn.innerText = '⏳ Evaluating with Assessment Agent...';
+
+            try {
+                const res = await fetch('/assessment/eval', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reqData)
+                });
+
+                const data = await res.json();
+                
+                if (res.ok) {
+                    document.getElementById('res-literacy').innerText = data.recommended_literacy_level;
+                    document.getElementById('res-numeracy').innerText = data.recommended_numeracy_level;
+                    document.getElementById('res-feedback-sw').innerText = data.feedback_swahili;
+                    document.getElementById('res-feedback-en').innerText = data.feedback_english;
+                    resultsCard.classList.remove('hidden');
+                    
+                    await loadStudents();
+                } else {
+                    alert('Assessment Error: ' + (data.detail || 'Failed to analyze observation'));
+                }
+            } catch (err) {
+                alert('Network error connecting to backend assessment service.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Run Assessment & Update Profile';
+            }
         }
 
         async function fetchExercise() {
             const studentId = document.getElementById('student-select').value;
-            const res = await fetch(`/tutor/exercise?student_id=${studentId}&subject=literacy`, { method: 'POST' });
-            const data = await res.json();
-            
-            document.getElementById('exercise-card').classList.remove('hidden');
-            document.getElementById('ex-question').innerText = data.question;
-            
-            const optionsDiv = document.getElementById('ex-options');
-            optionsDiv.innerHTML = '';
-            data.options.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.className = 'bg-slate-100 hover:bg-indigo-100 border border-slate-300 hover:border-indigo-500 font-semibold py-3 rounded-lg transition';
-                btn.innerText = opt;
-                btn.onclick = () => {
-                    document.getElementById('ex-encouragement').innerText = data.encouragement;
-                    document.getElementById('ex-encouragement').classList.remove('hidden');
-                };
-                optionsDiv.appendChild(btn);
-            });
+            if (!studentId) return;
 
-            document.getElementById('ex-hints').innerText = '💡 Hint: ' + data.hints.join(' | ');
+            const btn = document.getElementById('btn-exercise');
+            const card = document.getElementById('exercise-card');
+            const qBox = document.getElementById('ex-question');
+            
+            card.classList.remove('hidden');
+            qBox.innerText = '⏳ Generating adaptive exercise with Gemini 2.5 Flash...';
+            document.getElementById('ex-options').innerHTML = '';
+            document.getElementById('ex-hints').classList.add('hidden');
             document.getElementById('ex-encouragement').classList.add('hidden');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`/tutor/exercise?student_id=${studentId}&subject=literacy`, { method: 'POST' });
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    qBox.innerText = '❌ Error: ' + (data.detail || 'Failed to generate exercise.');
+                    return;
+                }
+
+                qBox.innerText = data.question;
+                
+                const optionsDiv = document.getElementById('ex-options');
+                data.options.forEach(opt => {
+                    const optionBtn = document.createElement('button');
+                    optionBtn.className = 'bg-slate-100 hover:bg-indigo-100 border border-slate-300 hover:border-indigo-500 font-semibold py-3 rounded-lg transition';
+                    optionBtn.innerText = opt;
+                    optionBtn.onclick = () => {
+                        document.getElementById('ex-encouragement').innerText = data.encouragement;
+                        document.getElementById('ex-encouragement').classList.remove('hidden');
+                    };
+                    optionsDiv.appendChild(optionBtn);
+                });
+
+                const hintsDiv = document.getElementById('ex-hints');
+                hintsDiv.innerText = '💡 Hint: ' + data.hints.join(' | ');
+                hintsDiv.classList.remove('hidden');
+            } catch (err) {
+                qBox.innerText = '❌ Network Error: Unable to connect to backend server.';
+            } finally {
+                btn.disabled = false;
+            }
         }
 
         async function generateGroups() {
-            const res = await fetch('/classroom/group', { method: 'POST' });
-            const data = await res.json();
-
-            document.getElementById('teacher-results').classList.remove('hidden');
-            document.getElementById('teacher-summary').innerText = data.teacher_summary;
-
+            const btn = document.getElementById('btn-group');
+            const summaryDiv = document.getElementById('teacher-summary');
             const container = document.getElementById('groups-container');
+            
+            document.getElementById('teacher-results').classList.remove('hidden');
+            summaryDiv.innerText = '⏳ Analyzing cohort data with Gemini 2.5 Flash...';
             container.innerHTML = '';
-            data.groups.forEach(g => {
-                const card = document.createElement('div');
-                card.className = 'bg-white p-5 rounded-xl border border-slate-200 shadow-sm';
-                card.innerHTML = `
-                    <h3 class="text-lg font-bold text-indigo-700">${g.group_name} (${g.target_level})</h3>
-                    <p class="text-sm text-slate-500 mb-2">Student IDs: ${g.student_ids.join(', ')}</p>
-                    <ul class="list-disc pl-5 text-sm space-y-1 text-slate-700">
-                        ${g.suggested_activities.map(act => `<li>${act}</li>`).join('')}
-                    </ul>
-                `;
-                container.appendChild(card);
-            });
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/classroom/group', { method: 'POST' });
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    summaryDiv.innerText = '❌ Error: ' + (data.detail || 'Failed to group students.');
+                    return;
+                }
+
+                summaryDiv.innerText = data.teacher_summary;
+
+                data.groups.forEach(g => {
+                    const groupCard = document.createElement('div');
+                    groupCard.className = 'bg-white p-5 rounded-xl border border-slate-200 shadow-sm';
+                    groupCard.innerHTML = `
+                        <h3 class="text-lg font-bold text-indigo-700">${g.group_name} (${g.target_level})</h3>
+                        <p class="text-sm text-slate-500 mb-2">Student IDs: ${g.student_ids.join(', ')}</p>
+                        <ul class="list-disc pl-5 text-sm space-y-1 text-slate-700">
+                            ${g.suggested_activities.map(act => `<li>${act}</li>`).join('')}
+                        </ul>
+                    `;
+                    container.appendChild(groupCard);
+                });
+            } catch (err) {
+                summaryDiv.innerText = '❌ Network Error: Unable to connect to backend server.';
+            } finally {
+                btn.disabled = false;
+            }
         }
     </script>
 </body>

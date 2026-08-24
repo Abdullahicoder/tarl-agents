@@ -8,27 +8,29 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-project_id = os.getenv("GCP_PROJECT_ID", "vertical-theory-383513")
-location = os.getenv("GCP_LOCATION", "us-central1")
-
-# Initialize Vertex AI client using Application Default Credentials
-client = genai.Client(vertexai=True, project=project_id, location=location)
+def get_client():
+    api_key = os.getenv("GEMINI_API_KEY")
+    project_id = os.getenv("GCP_PROJECT_ID", "vertical-theory-383513")
+    location = os.getenv("GCP_LOCATION", "us-central1")
+    
+    if api_key:
+        return genai.Client(api_key=api_key)
+    return genai.Client(vertexai=True, project=project_id, location=location)
 
 class GroupingRecommendation(BaseModel):
     groups: List[ClassGroup]
     teacher_summary: str
 
 def generate_classroom_groups(students: List[Student]) -> GroupingRecommendation:
+    client = get_client()
     student_data = [
         {"id": s.id, "name": s.name, "literacy": s.literacy_level.value, "numeracy": s.numeracy_level.value}
         for s in students
     ]
     
     prompt = f"""
-    Analyze the following classroom cohort data and group students according to TaRL principles (grouping by skill level, not age/grade):
+    Analyze the following classroom cohort data and group students according to TaRL principles:
     {student_data}
-    
-    Create targeted skill-based learning groups for classroom instruction and provide specific hands-on activity recommendations for the teacher.
     """
     
     response = client.models.generate_content(
