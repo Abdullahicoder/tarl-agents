@@ -2,14 +2,12 @@ from enum import Enum
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
-
 class LiteracyLevel(str, Enum):
     BEGINNER = "Beginner"
     LETTER = "Letter"
     WORD = "Word"
     PARAGRAPH = "Paragraph"
     STORY = "Story"
-
 
 class NumeracyLevel(str, Enum):
     BEGINNER = "Beginner"
@@ -20,7 +18,6 @@ class NumeracyLevel(str, Enum):
     MULTIPLICATION = "Multiplication"
     DIVISION = "Division"
 
-
 class Student(BaseModel):
     id: str
     name: str
@@ -29,14 +26,12 @@ class Student(BaseModel):
     numeracy_level: NumeracyLevel
     history: List[dict] = Field(default_factory=list)
 
-
 class ExerciseResponse(BaseModel):
     question: str
     options: List[str]
     correct_answer: str
-    hints: List[str]
+    hints: List[str] = Field(default_factory=list)
     encouragement: str
-
 
 class ClassGroup(BaseModel):
     group_name: str

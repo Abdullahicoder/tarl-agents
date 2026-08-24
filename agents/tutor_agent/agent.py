@@ -1,73 +1,51 @@
 import os
-
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-
 from shared.models.models import Student, ExerciseResponse
+from shared.memory import condense_student_history
 
 load_dotenv()
 
-
 def get_client():
-    api_key = os.getenv("GEMINI_API_KEY")
-    project_id = os.getenv("GCP_PROJECT_ID", "vertical-theory-383513")
-    location = os.getenv("GCP_LOCATION", "us-central1")
-
-    if api_key:
-        return genai.Client(api_key=api_key)
-
+    key = os.getenv("GEMINI_API_KEY")
+    if key:
+        return genai.Client(api_key=key)
     return genai.Client(
         vertexai=True,
-        project=project_id,
-        location=location,
+        project=os.getenv("GCP_PROJECT_ID", "vertical-theory-383513"),
+        location=os.getenv("GCP_LOCATION", "us-central1"),
     )
 
-
-SYSTEM_PROMPT = """
-You are a bilingual Swahili-English TaRL tutor for primary school
-students in East Africa.
-
-Rules:
-- Write every question in English and Swahili.
-- Write every answer option in English and Swahili.
-- Write hints in English and Swahili.
-- Keep the activity appropriate to the student's assessed level.
-- Do not make the task harder than the student's level.
-- Always make correct_answer exactly match one option.
-- Keep instructions clear and encouraging.
-"""
-
-
-def generate_targeted_exercise(
-    student: Student,
-    subject: str = "literacy",
-) -> ExerciseResponse:
-
+def generate_targeted_exercise(student: Student, subject: str = "literacy"):
     client = get_client()
 
-    level = (
-        student.literacy_level.value
-        if subject.lower() == "literacy"
-        else student.numeracy_level.value
-    )
+    if subject.lower() == "literacy":
+        level = student.literacy_level.value
+    else:
+        subject = "numeracy"
+        level = student.numeracy_level.value
+
+    memory = condense_student_history(student.history, student.name)
 
     prompt = f"""
-Create one interactive {subject} exercise.
+Create ONE {subject} exercise for a TaRL student.
 
-Student:
-Name: {student.name}
+Student: {student.name}
 Age: {student.age}
-Assessed level: {level}
+Level: {level}
 
-Return exactly one exercise.
+Focus: {memory.recommended_focus}
+
+Use both English and Swahili.
+Create multiple-choice options.
+correct_answer must exactly equal one option.
 """
 
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
             response_mime_type="application/json",
             response_schema=ExerciseResponse,
             temperature=0.3,
