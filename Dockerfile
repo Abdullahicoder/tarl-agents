@@ -7,4 +7,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD exec uvicorn deploy.main:app --host 0.0.0.0 --port ${PORT:-8080}
+# Ensure Python treats /app as the root module search directory
+ENV PYTHONPATH=/app
+ENV PORT=8080
+EXPOSE 8080
+
+CMD ["uvicorn", "deploy.main:app", "--host", "0.0.0.0", "--port", "8080"]

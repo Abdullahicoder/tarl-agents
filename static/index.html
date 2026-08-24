@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaRL Learning Agents Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 font-sans">
+    <div class="max-w-4xl mx-auto p-6">
+        <header class="text-center py-6">
+            <h1 class="text-3xl font-bold text-indigo-700">🌍 TaRL Learning Agents</h1>
+            <p class="text-slate-600 mt-2">Bilingual AI Tutor & Skill-Based Classroom Manager</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="flex justify-center border-b border-slate-300 mb-6">
+            <button id="tab-student" onclick="switchTab('student')" class="px-6 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600">📱 Student Portal</button>
+            <button id="tab-teacher" onclick="switchTab('teacher')" class="px-6 py-2 font-semibold text-slate-500 hover:text-indigo-600">📊 Teacher Co-Pilot</button>
+        </div>
+
+        <!-- Student View -->
+        <div id="view-student" class="space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <label class="block text-sm font-medium text-slate-700 mb-2">Select Student:</label>
+                <select id="student-select" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    <option value="s1">Amina (Age 4, Literacy: Beginner)</option>
+                    <option value="s2">Samuel (Age 10, Literacy: Beginner)</option>
+                    <option value="s3">Kofi (Age 9, Literacy: Word)</option>
+                    <option value="s4">Zainab (Age 8, Literacy: Story)</option>
+                </select>
+                <button onclick="fetchExercise()" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-md transition">
+                    Start AI Exercise
+                </button>
+            </div>
+
+            <div id="exercise-card" class="hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                <div class="bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-500">
+                    <p id="ex-question" class="text-lg font-medium text-indigo-950"></p>
+                </div>
+                <div id="ex-options" class="grid grid-cols-2 gap-3"></div>
+                <div id="ex-hints" class="bg-amber-50 p-3 rounded-lg text-amber-800 text-sm italic"></div>
+                <div id="ex-encouragement" class="bg-emerald-50 p-3 rounded-lg text-emerald-800 font-semibold text-center hidden"></div>
+            </div>
+        </div>
+
+        <!-- Teacher View -->
+        <div id="view-teacher" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
+                <h2 class="text-xl font-bold mb-2">Classroom Skill Grouping</h2>
+                <p class="text-slate-600 text-sm mb-4">Analyze Firestore student data and generate TaRL grouping recommendations.</p>
+                <button onclick="generateGroups()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-lg shadow-md transition">
+                    Run Skill Grouping
+                </button>
+            </div>
+
+            <div id="teacher-results" class="hidden space-y-4">
+                <div id="teacher-summary" class="bg-blue-50 p-4 rounded-lg text-blue-900 border border-blue-200"></div>
+                <div id="groups-container" class="space-y-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.getElementById('view-student').classList.toggle('hidden', tab !== 'student');
+            document.getElementById('view-teacher').classList.toggle('hidden', tab !== 'teacher');
+            document.getElementById('tab-student').className = tab === 'student' ? 'px-6 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600' : 'px-6 py-2 font-semibold text-slate-500 hover:text-indigo-600';
+            document.getElementById('tab-teacher').className = tab === 'teacher' ? 'px-6 py-2 font-semibold text-indigo-600 border-b-2 border-indigo-600' : 'px-6 py-2 font-semibold text-slate-500 hover:text-indigo-600';
+        }
+
+        async function fetchExercise() {
+            const studentId = document.getElementById('student-select').value;
+            const res = await fetch(`/tutor/exercise?student_id=${studentId}&subject=literacy`, { method: 'POST' });
+            const data = await res.json();
+            
+            document.getElementById('exercise-card').classList.remove('hidden');
+            document.getElementById('ex-question').innerText = data.question;
+            
+            const optionsDiv = document.getElementById('ex-options');
+            optionsDiv.innerHTML = '';
+            data.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-slate-100 hover:bg-indigo-100 border border-slate-300 hover:border-indigo-500 font-semibold py-3 rounded-lg transition';
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    document.getElementById('ex-encouragement').innerText = data.encouragement;
+                    document.getElementById('ex-encouragement').classList.remove('hidden');
+                };
+                optionsDiv.appendChild(btn);
+            });
+
+            document.getElementById('ex-hints').innerText = '💡 Hint: ' + data.hints.join(' | ');
+            document.getElementById('ex-encouragement').classList.add('hidden');
+        }
+
+        async function generateGroups() {
+            const res = await fetch('/classroom/group', { method: 'POST' });
+            const data = await res.json();
+
+            document.getElementById('teacher-results').classList.remove('hidden');
+            document.getElementById('teacher-summary').innerText = data.teacher_summary;
+
+            const container = document.getElementById('groups-container');
+            container.innerHTML = '';
+            data.groups.forEach(g => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-5 rounded-xl border border-slate-200 shadow-sm';
+                card.innerHTML = `
+                    <h3 class="text-lg font-bold text-indigo-700">${g.group_name} (${g.target_level})</h3>
+                    <p class="text-sm text-slate-500 mb-2">Student IDs: ${g.student_ids.join(', ')}</p>
+                    <ul class="list-disc pl-5 text-sm space-y-1 text-slate-700">
+                        ${g.suggested_activities.map(act => `<li>${act}</li>`).join('')}
+                    </ul>
+                `;
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
