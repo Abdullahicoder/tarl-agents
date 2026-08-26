@@ -88,16 +88,16 @@ export function setLanguage(lang) {
  * Replaced by: POST /tutor/next-activity { studentId, subject }
  * The server picks items from the learner's deterministic TaRL level.
  */
-export function nextRound(subject, levels) {
+export function nextRound(subject, levels, lang = 'sw') {
   switch (subject) {
     case 'LITERACY':
-      return literacyItemsFor(levels.literacy)
+      return literacyItemsFor(levels.literacy, lang)
     case 'NUMERACY':
-      return numeracyItemsFor(levels.numeracy)
+      return numeracyItemsFor(levels.numeracy, lang)
     case 'STORIES':
-      return storyItems()
+      return storyItems(lang)
     case 'WRITING':
-      return writingItems()
+      return writingItems(lang)
     default:
       return []
   }

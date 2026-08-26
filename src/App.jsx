@@ -29,7 +29,7 @@ export default function StudentApp() {
 
   const items = useMemo(() => {
     if (!SUBJECTS.includes(screen)) return []
-    return api.nextRound(screen, session.levels)
+    return api.nextRound(screen, session.levels, session.lang)
   }, [screen, session.levels])
 
   const refresh = useCallback(() => setSession(api.loadSession()), [])
