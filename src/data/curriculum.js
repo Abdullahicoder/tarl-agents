@@ -91,10 +91,13 @@ const literacyBank = {
     },
     {
       type: 'BUILD_WORD',
-      prompt: { en: 'Build the word "chai"', sw: 'Tunga neno "chai"' },
-      say: { en: 'chai — tea', sw: 'chai' },
-      word: 'chai',
-      pool: ['c', 'h', 'a', 'i', 'u', 'k'],
+      prompt: { en: 'Build the word "tea"', sw: 'Tunga neno "chai"' },
+      say: { en: 'tea', sw: 'chai' },
+      word: { en: 'tea', sw: 'chai' },
+      pool: {
+        en: ['t', 'e', 'a', 'i', 'o'],
+        sw: ['c', 'h', 'a', 'i', 'u'],
+      },
     },
     {
       type: 'WORD_PICTURE',

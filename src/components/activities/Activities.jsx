@@ -182,8 +182,11 @@ function FillPhrase({ item, onAnswer }) {
   )
 }
 
-function BuildWord({ item, onAnswer }) {
-  const target = item.word.split('')
+function BuildWord({ item, lang, onAnswer }) {
+  const word = typeof item.word === 'string' ? item.word : item.word[lang]
+  const pool = Array.isArray(item.pool) ? item.pool : item.pool[lang]
+
+  const target = word.split('')
   const [slots, setSlots] = useState([])
   const done = slots.length === target.length
 
@@ -192,7 +195,7 @@ function BuildWord({ item, onAnswer }) {
     const next = [...slots, letter]
     setSlots(next)
     if (next.length === target.length) {
-      onAnswer(next.join('') === item.word)
+      onAnswer(next.join('') === word)
     }
   }
 
@@ -214,7 +217,7 @@ function BuildWord({ item, onAnswer }) {
       </div>
 
       <div className="mx-auto grid max-w-xl grid-cols-5 gap-3">
-        {item.pool.map((letter, i) => (
+        {pool.map((letter, i) => (
           <OptionTile key={`${letter}-${i}`} tone="sky" onClick={() => tap(letter)}>
             <span className="text-4xl font-extrabold lowercase">{letter}</span>
           </OptionTile>
