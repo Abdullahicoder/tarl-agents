@@ -1,85 +1,137 @@
-import React, { useState, useEffect } from 'react';
-import HeaderBar from './components/HeaderBar';
-import MainStage from './components/MainStage';
-import NavigationDock from './components/NavigationDock';
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import HeaderBar from './components/layout/HeaderBar'
+import NavigationDock from './components/layout/NavigationDock'
+import SignInScreen from './components/screens/SignInScreen'
+import HomeScreen from './components/screens/HomeScreen'
+import ActivityScreen from './components/screens/ActivityScreen'
+import RewardsScreen from './components/screens/RewardsScreen'
+import { makeT } from './data/i18n'
+import { useSpeech } from './hooks/useSpeech'
+import * as api from './data/api'
 
+const SUBJECTS = ['LITERACY', 'NUMERACY', 'STORIES', 'WRITING']
+
+/**
+ * Student application root.
+ *
+ * Routing is intentionally a small local state machine rather than a router:
+ * the learner never types a URL, the app must work offline, and the teacher
+ * and parent applications will be separate entry points (see CLAUDE.md §17).
+ */
 export default function StudentApp() {
-  const [currentStage, setCurrentStage] = useState('STUDY_ZONE');
-  const [activeSubject, setActiveSubject] = useState('LITERACY');
-  const [starCount, setStarCount] = useState(0);
-  const [feedback, setFeedback] = useState(null);
-  const [activeItemIndex, setActiveItemIndex] = useState(0);
+  const [session, setSession] = useState(() => api.loadSession())
+  const [screen, setScreen] = useState('HOME')
 
-  const literacyItems = [
-    { target: 'A', prompt: 'Find the letter A', options: ['A', 'B', 'C'], correct: 'A' },
-    { target: 'B', prompt: 'Find the letter B', options: ['D', 'B', 'P'], correct: 'B' },
-  ];
+  const t = useMemo(() => makeT(session.lang), [session.lang])
+  const { speak, repeat } = useSpeech(session.lang)
 
-  const numeracyItems = [
-    { target: '3', prompt: 'Count the apples: 🍎 🍎 🍎', options: ['2', '3', '5'], correct: '3' },
-    { target: '2', prompt: 'Count the stars: ⭐ ⭐', options: ['1', '2', '4'], correct: '2' },
-  ];
+  const students = useMemo(() => api.listStudents(), [])
 
-  const storyItems = [
-    { title: 'The Wise Tortoise', text: 'Once upon a time, a small tortoise saved the forest water pool...' },
-  ];
+  const items = useMemo(() => {
+    if (!SUBJECTS.includes(screen)) return []
+    return api.nextRound(screen, session.levels, session.lang)
+  }, [screen, session.levels])
 
-  const speakText = (text) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-    }
-  };
+  const refresh = useCallback(() => setSession(api.loadSession()), [])
+
+  const handleAnswer = useCallback(
+    (payload) => {
+      api.recordAnswer(payload)
+      refresh()
+    },
+    [refresh],
+  )
+
+  const handleLanguage = useCallback(
+    (lang) => {
+      api.setLanguage(lang)
+      refresh()
+    },
+    [refresh],
+  )
+
+
+  const handleSwitchStudent = useCallback(() => {
+    api.signOut()
+    refresh()
+    setScreen('HOME')
+  }, [refresh])
 
   useEffect(() => {
-    if (activeSubject === 'LITERACY') speakText(literacyItems[0].prompt);
-    if (activeSubject === 'NUMERACY') speakText(numeracyItems[0].prompt);
-    if (activeSubject === 'STORIES') speakText(storyItems[0].title);
-  }, [activeSubject]);
+    document.documentElement.lang = session.lang
+  }, [session.lang])
 
-  const currentItem = activeSubject === 'LITERACY' 
-    ? literacyItems[activeItemIndex % literacyItems.length]
-    : numeracyItems[activeItemIndex % numeracyItems.length];
+  if (!session.student) {
+    return (
+      <SignInScreen
+        students={students}
+        lang={session.lang}
+        t={t}
+        onLanguageChange={handleLanguage}
+        onPick={(id) => {
+          api.signIn(id)
+          refresh()
+          setScreen('HOME')
+        }}
+      />
+    )
+  }
 
-  const handleOptionClick = (option, correctOption) => {
-    if (option === correctOption) {
-      setStarCount((prev) => prev + 1);
-      setFeedback('SUCCESS');
-      speakText('Great job!');
-      setTimeout(() => {
-        setFeedback(null);
-        setActiveItemIndex((prev) => (prev + 1) % 2);
-      }, 1200);
-    } else {
-      setFeedback('TRY_AGAIN');
-      speakText('Try again!');
-      setTimeout(() => setFeedback(null), 1000);
-    }
-  };
+  const inActivity = SUBJECTS.includes(screen)
 
   return (
-    <div className="h-screen w-screen bg-sky-100 flex flex-col justify-between p-4 font-sans select-none overflow-hidden">
-      <HeaderBar 
-        starCount={starCount} 
-        resetStars={() => setStarCount(0)} 
-        onAudioTrigger={() => speakText(activeSubject === 'STORIES' ? storyItems[0].text : currentItem.prompt)} 
+    <div className="flex min-h-full flex-col">
+      <HeaderBar
+        student={inActivity ? null : session.student}
+        stars={session.stars}
+        lang={session.lang}
+        onLanguageChange={handleLanguage}
+        onRepeatAudio={inActivity ? repeat : undefined}
+        onBack={inActivity ? () => setScreen('HOME') : undefined}
+        onSwitchStudent={!inActivity ? handleSwitchStudent : undefined}
+        title={inActivity ? t(screen === 'WRITING' ? 'writing' : screen.toLowerCase()) : null}
       />
-      <MainStage 
-        currentStage={currentStage}
-        activeSubject={activeSubject}
-        currentItem={currentItem}
-        storyItem={storyItems[0]}
-        feedback={feedback}
-        onOptionClick={handleOptionClick}
-      />
-      <NavigationDock 
-        currentStage={currentStage}
-        activeSubject={activeSubject}
-        setStage={setCurrentStage}
-        setSubject={setActiveSubject}
+
+      <main className="flex-1">
+        {screen === 'HOME' && (
+          <HomeScreen
+            student={session.student}
+            levels={session.levels}
+            starsToday={session.starsToday}
+            dailyGoal={session.dailyGoal}
+            lang={session.lang}
+            t={t}
+            onOpen={setScreen}
+          />
+        )}
+
+        {inActivity && (
+          <ActivityScreen
+            key={screen}
+            subject={screen}
+            items={items}
+            lang={session.lang}
+            t={t}
+            speak={speak}
+            onAnswer={handleAnswer}
+            onExit={() => setScreen('HOME')}
+          />
+        )}
+
+        {screen === 'REWARDS' && (
+          <RewardsScreen
+            stars={session.stars}
+            lang={session.lang}
+            t={t}
+          />
+        )}
+      </main>
+
+      <NavigationDock
+        active={screen}
+        t={t}
+        onNavigate={(id) => setScreen(id === 'HOME' ? 'HOME' : id)}
       />
     </div>
-  );
+  )
 }

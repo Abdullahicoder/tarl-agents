@@ -1,111 +1,149 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import 'tailwindcss';
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+/* ------------------------------------------------------------------
+   TaRL Student Frontend — design tokens
+   Visual reference: onebillion "onecourse" (clean white stage,
+   pastel activity tiles, chunky geometry, very large friendly type).
+   All illustration is inline SVG so the app stays low-bandwidth.
+------------------------------------------------------------------- */
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@theme {
+  --color-ink: #14202e;
+  --color-ink-soft: #55697f;
+  --color-page: #f4f7fb;
+  --color-stage: #ffffff;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
+  /* activity accent families */
+  --color-sky-tile: #d7ecff;
+  --color-sky-ink: #0b63a8;
+  --color-mint-tile: #d8f3e2;
+  --color-mint-ink: #12764a;
+  --color-lemon-tile: #fdf0c8;
+  --color-lemon-ink: #8a6208;
+  --color-blush-tile: #ffe0e2;
+  --color-blush-ink: #b03a44;
+  --color-lilac-tile: #e9e2ff;
+  --color-lilac-ink: #5b3fb0;
+
+  --color-correct: #16a34a;
+  --color-retry: #f59e0b;
+
+  --radius-tile: 28px;
+  --radius-stage: 36px;
+
+  --font-display: 'Nunito', 'Segoe UI Rounded', system-ui, sans-serif;
+  --font-sans: 'Nunito', system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  --shadow-tile: 0 10px 0 0 rgb(0 0 0 / 0.07);
+  --shadow-stage: 0 24px 60px -28px rgb(20 32 46 / 0.35);
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
+  /* Large, forgiving tap targets for cheap tablets */
+  button {
+    touch-action: manipulation;
+    font-family: inherit;
+  }
+
+  :focus-visible {
+    outline: 4px solid var(--color-sky-ink);
+    outline-offset: 3px;
+    border-radius: 12px;
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+@layer utilities {
+  .press {
+    transition:
+      transform 120ms ease,
+      box-shadow 120ms ease,
+      background-color 150ms ease;
+  }
+  .press:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 0 rgb(0 0 0 / 0.07);
   }
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+  .stage-grain {
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      rgb(20 32 46 / 0.05) 1px,
+      transparent 0
+    );
+    background-size: 22px 22px;
+  }
+
+  @keyframes pop-in {
+    0% {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+    70% {
+      transform: scale(1.08);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  .animate-pop-in {
+    animation: pop-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20%,
+    60% {
+      transform: translateX(-10px);
+    }
+    40%,
+    80% {
+      transform: translateX(10px);
+    }
+  }
+  .animate-shake {
+    animation: shake 380ms ease;
+  }
+
+  @keyframes float-up {
+    0% {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-120px) scale(1.5);
+      opacity: 0;
+    }
+  }
+  .animate-float-up {
+    animation: float-up 1s ease-out forwards;
   }
 }
 
-body {
-  margin: 0;
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
 }
