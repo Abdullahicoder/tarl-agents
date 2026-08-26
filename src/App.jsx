@@ -50,6 +50,13 @@ export default function StudentApp() {
     [refresh],
   )
 
+
+  const handleSwitchStudent = useCallback(() => {
+    api.signOut()
+    refresh()
+    setScreen('HOME')
+  }, [refresh])
+
   useEffect(() => {
     document.documentElement.lang = session.lang
   }, [session.lang])
@@ -81,6 +88,7 @@ export default function StudentApp() {
         onLanguageChange={handleLanguage}
         onRepeatAudio={inActivity ? repeat : undefined}
         onBack={inActivity ? () => setScreen('HOME') : undefined}
+        onSwitchStudent={!inActivity ? handleSwitchStudent : undefined}
         title={inActivity ? t(screen === 'WRITING' ? 'writing' : screen.toLowerCase()) : null}
       />
 
@@ -115,10 +123,6 @@ export default function StudentApp() {
             stars={session.stars}
             lang={session.lang}
             t={t}
-            onReset={() => {
-              api.resetProgress()
-              refresh()
-            }}
           />
         )}
       </main>
