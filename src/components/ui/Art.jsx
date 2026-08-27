@@ -105,6 +105,7 @@ export default function Art({ name, className = 'w-16 h-16', title }) {
 const AVATAR_COLORS = {
   amina: ['#F48FB1', '#AD1457'],
   juma: ['#90CAF9', '#1565C0'],
+  kamau: ['#90CAF9', '#1565C0'],
   neema: ['#A5D6A7', '#2E7D32'],
   baraka: ['#FFCC80', '#EF6C00'],
 }

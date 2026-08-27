@@ -55,9 +55,30 @@ def curriculum_for(subject: str, target_level: str):
     return curriculum
 
 
-def build_lesson_prompt(context: GroupContext) -> str:
+LANGUAGE_NAMES = {"english": "English", "swahili": "Kiswahili"}
+
+
+def instruction_language_for(subject: str, requested: str = "swahili") -> str:
+    """Which language the lesson is written in.
+
+    For a literacy lesson the subject IS the language — an English literacy
+    lesson written in Kiswahili teaches nothing. For numeracy the subject says
+    nothing about language, so the teacher's choice decides. Leaving it unstated
+    made the model pick, which meant the same group could get English one day
+    and Kiswahili the next.
+    """
+    if subject.lower() in LANGUAGE_NAMES:
+        return subject.lower()
+    return requested if requested in LANGUAGE_NAMES else "swahili"
+
+
+def build_lesson_prompt(
+    context: GroupContext,
+    instruction_language: str = "swahili",
+) -> str:
     """The exact text the model sees. Kept pure so a test can assert on it."""
     curriculum = curriculum_for(context.subject, context.target_level)
+    language = instruction_language_for(context.subject, instruction_language)
 
     students = (
         "\n".join(
@@ -93,8 +114,12 @@ CLASS
 GROUP
 {context.group_name}
 
-SUBJECT (language of instruction for literacy)
+SUBJECT
 {context.subject}
+
+WRITE THE ENTIRE LESSON IN {LANGUAGE_NAMES[language]}
+Title, objectives, activities, differentiation and teacher prompts must all be
+in {LANGUAGE_NAMES[language]} — not a translated heading over another language.
 
 VERIFIED TARGET LEVEL — authoritative, do not change
 {context.target_level}
@@ -117,7 +142,9 @@ CURRICULUM SKILLS
 CURRICULUM ACTIVITIES
 {_bullets(curriculum.sample_activities)}
 
-HOW THE TEACHER WILL CHECK
+HOW THIS LEVEL WAS DIAGNOSED — the band these learners are currently in.
+This is NOT a target and NOT a success criterion. Do not restate it as the
+end-of-lesson check; write your own check for what success looks like today.
 {curriculum.assessment_criteria}
 
 Generate the lesson recommendation now.
@@ -129,7 +156,10 @@ def _extract_plan(text: str) -> LessonPlan:
     return LessonPlan.model_validate(json.loads(text))
 
 
-async def generate_lesson_plan(context: GroupContext) -> LessonPlan:
+async def generate_lesson_plan(
+    context: GroupContext,
+    instruction_language: str = "swahili",
+) -> LessonPlan:
     """Run the ADK lesson agent over verified context.
 
     NOT VERIFIED IN CI: the ADK runner surface below could not be executed in
@@ -149,7 +179,7 @@ async def generate_lesson_plan(context: GroupContext) -> LessonPlan:
 
     message = types.Content(
         role="user",
-        parts=[types.Part(text=build_lesson_prompt(context))],
+        parts=[types.Part(text=build_lesson_prompt(context, instruction_language))],
     )
 
     final: Optional[str] = None

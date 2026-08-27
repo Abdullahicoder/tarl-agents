@@ -14,9 +14,9 @@ from shared.models.models import (
 DEMO_CLASSROOMS = [
     Classroom(
         id="c1",
-        name="Standard 3 — Mwanza Primary",
+        name="Grade 3 — Kiawara Primary",
         teacher_uids=["demo-teacher-uid"],
-        school="Mwanza Primary",
+        school="Kiawara Primary School",
         grade=3,
     ),
 ]
@@ -33,7 +33,7 @@ DEMO_STUDENTS = [
     ),
     Student(
         id="s2",
-        name="Kofi",
+        name="Kamau",
         age=9,
         class_id="c1",
         english_literacy_level=LiteracyLevel.WORD,

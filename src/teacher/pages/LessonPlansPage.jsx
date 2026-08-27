@@ -137,7 +137,7 @@ export default function LessonPlansPage() {
                         </div>
                         <div>
                           <h4 className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
-                            Ready when
+                            How this level was diagnosed
                           </h4>
                           <p className="mt-1.5 text-sm">
                             {response.curriculum_assessment_criteria}

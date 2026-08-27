@@ -46,7 +46,7 @@ def run_tests():
     cohort = [
         preschooler,
         older_student,
-        Student(id="s3", name="Kofi", age=9, english_literacy_level=LiteracyLevel.WORD, swahili_literacy_level=LiteracyLevel.WORD, numeracy_level=NumeracyLevel.ADDITION),
+        Student(id="s3", name="Kamau", age=9, english_literacy_level=LiteracyLevel.WORD, swahili_literacy_level=LiteracyLevel.WORD, numeracy_level=NumeracyLevel.ADDITION),
         Student(id="s4", name="Zainab", age=8, english_literacy_level=LiteracyLevel.STORY, swahili_literacy_level=LiteracyLevel.STORY, numeracy_level=NumeracyLevel.DIVISION)
     ]
 

@@ -62,7 +62,7 @@ export default function ClassesPage() {
               <TextInput
                 required
                 value={form.name}
-                placeholder="Standard 3 — Mwanza Primary"
+                placeholder="Grade 3 — Kiawara Primary"
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </Field>

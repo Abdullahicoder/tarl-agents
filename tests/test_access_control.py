@@ -76,12 +76,15 @@ def test_a_token_signed_with_another_secret_is_rejected(monkeypatch):
 
 def test_an_expired_session_is_rejected(monkeypatch):
     token = ss.create_student_session("s1", "c1")
-    # `ss.time` IS the time module, so the replacement must close over the
-    # original function — calling time.time() inside the lambda recurses.
+
+    # `ss.time` is the time module itself, so the replacement must close over
+    # the ORIGINAL function. Calling time.time() inside the lambda would call
+    # the patched lambda and recurse.
     real_time = time.time
     monkeypatch.setattr(
         ss.time, "time", lambda: real_time() + ss.SESSION_TTL_SECONDS + 60
     )
+
     with pytest.raises(ValueError):
         ss.verify_student_session(token)
 
@@ -141,8 +144,8 @@ INTRUDER = "some-other-teacher-uid"
 class FakeDB:
     def __init__(self):
         self.classrooms = {
-            "c1": Classroom(id="c1", name="Standard 3", teacher_uids=[OWNER]),
-            "c2": Classroom(id="c2", name="Standard 4", teacher_uids=[INTRUDER]),
+            "c1": Classroom(id="c1", name="Grade 3", teacher_uids=[OWNER]),
+            "c2": Classroom(id="c2", name="Grade 4", teacher_uids=[INTRUDER]),
         }
         self.students = {
             "s1": Student(

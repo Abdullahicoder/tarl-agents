@@ -14,6 +14,7 @@ from agents.lesson_agent.service import (
     UnknownLevelError,
     build_lesson_prompt,
     curriculum_for,
+    instruction_language_for,
 )
 from shared.memory import build_group_context, build_student_context
 from shared.models.models import (
@@ -79,9 +80,9 @@ def _assessment(student_id, assessed_at, *, note=None, final_numeracy=None,
 def db():
     classroom = Classroom(
         id="c1",
-        name="Standard 3 — Mwanza Primary",
+        name="Grade 3 — Kiawara Primary",
         teacher_uids=["y7OmRFzNgFe883Z8v2bBHmz7CUn1"],
-        school="Mwanza Primary",
+        school="Kiawara Primary School",
         grade=3,
     )
     students = [
@@ -265,3 +266,31 @@ def test_the_lesson_path_never_mutates_a_student(db):
     build_lesson_prompt(_group(db))
     after = {s.id: s.numeracy_level for s in db.list_students_in_class("c1")}
     assert before == after
+
+
+# ---------------------------------------------------------------------------
+# instruction language — a teacher must not get a different language per run
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("requested,expected", [("swahili", "swahili"), ("english", "english")])
+def test_numeracy_takes_the_language_the_teacher_asked_for(requested, expected):
+    assert instruction_language_for("numeracy", requested) == expected
+
+
+@pytest.mark.parametrize("subject", ["english", "swahili"])
+def test_literacy_language_comes_from_the_subject_not_the_request(subject):
+    """An English literacy lesson written in Kiswahili teaches nothing, so the
+    subject overrides whatever was requested."""
+    other = "swahili" if subject == "english" else "english"
+    assert instruction_language_for(subject, other) == subject
+
+
+def test_an_unrecognised_language_falls_back_rather_than_crashing():
+    assert instruction_language_for("numeracy", "klingon") == "swahili"
+
+
+@pytest.mark.parametrize("language,marker", [("swahili", "Kiswahili"), ("english", "English")])
+def test_the_prompt_states_the_language_explicitly(db, language, marker):
+    prompt = build_lesson_prompt(_group(db), language)
+    assert f"WRITE THE ENTIRE LESSON IN {marker}" in prompt

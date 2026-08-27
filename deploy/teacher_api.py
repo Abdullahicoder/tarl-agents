@@ -15,7 +15,7 @@ request body.
 import asyncio
 import logging
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -162,6 +162,8 @@ class LessonPlanRequest(BaseModel):
     subject: Subject
     target_level: str
     group_name: str = ""
+    # Ignored for literacy, where the subject already names the language.
+    instruction_language: Literal["english", "swahili"] = "swahili"
 
 
 # ---------------------------------------------------------------------------
@@ -526,7 +528,7 @@ async def build_lesson_plan(
         ) from exc
 
     try:
-        plan = await generate_lesson_plan(context)
+        plan = await generate_lesson_plan(context, body.instruction_language)
     except Exception as exc:  # noqa: BLE001 — surfaced to the teacher as 503
         logger.exception("Lesson agent failed for class %s", class_id)
         raise HTTPException(

@@ -127,6 +127,17 @@ def _level_value(value: Any) -> str:
     return value.value if hasattr(value, "value") else str(value)
 
 
+def _attribute(note: str, student_name: str) -> str:
+    """Prefix a note with the learner it is about, unless it already says so.
+
+    Teachers naturally write "Zainab works best with..." — blindly prefixing
+    produced "Zainab: Zainab works best with...".
+    """
+    if note.lower().startswith(student_name.lower()):
+        return note
+    return f"{student_name}: {note}"
+
+
 def _assessment_to_context(
     record: AssessmentRecord,
     student_name: str = "",
@@ -399,7 +410,7 @@ def build_group_context(
         # notes cannot be acted on: "needs concrete objects first" is only
         # useful if the teacher knows who it describes.
         teacher_notes.extend(
-            f"{student.name}: {record.teacher_note}"
+            _attribute(record.teacher_note, student.name)
             for record in records
             if record.teacher_note
         )

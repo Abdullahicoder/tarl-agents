@@ -68,7 +68,7 @@ export function setLanguage(lang) {
 
 const DEMO_ROSTER = [
   { id: 's1', name: 'Amina', avatar: 'amina' },
-  { id: 's2', name: 'Kofi', avatar: 'kofi' },
+  { id: 's2', name: 'Kamau', avatar: 'kamau' },
   { id: 's3', name: 'Zainab', avatar: 'zainab' },
   { id: 's5', name: 'Neema', avatar: 'neema' },
 ]
