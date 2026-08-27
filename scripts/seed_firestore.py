@@ -1,21 +1,50 @@
-import os
+"""Seed the current TaRL demo classroom into Firestore.
+
+Usage:
+    python -m scripts.seed_firestore <TEACHER_UID>
+
+This writes only demo/sample data. It does not create Firebase users or roles.
+"""
+
 import sys
+
 from google.cloud import firestore
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from scripts.seed_demo_data import DEMO_CLASSROOMS, DEMO_STUDENTS
 
-db = firestore.Client(project="vertical-theory-383513")
+PROJECT_ID = "vertical-theory-383513"
 
-demo_students = [
-    {"id": "s1", "name": "Amina", "age": 4, "literacy_level": "Beginner", "numeracy_level": "Single Digit"},
-    {"id": "s2", "name": "Samuel", "age": 10, "literacy_level": "Beginner", "numeracy_level": "Single Digit"},
-    {"id": "s3", "name": "Kofi", "age": 9, "literacy_level": "Word", "numeracy_level": "Addition"},
-    {"id": "s4", "name": "Zainab", "age": 8, "literacy_level": "Story", "numeracy_level": "Division"}
-]
 
-print(" Seeding Firestore database...")
-for s in demo_students:
-    db.collection("students").document(s["id"]).set(s)
-    print(f" Saved student: {s['name']} (ID: {s['id']})")
+def main() -> None:
+    if len(sys.argv) != 2:
+        print("Usage: python -m scripts.seed_firestore <TEACHER_UID>")
+        sys.exit(1)
 
-print(" Firestore seeding complete!\n")
+    teacher_uid = sys.argv[1]
+
+    db = firestore.Client(project=PROJECT_ID)
+
+    classroom = DEMO_CLASSROOMS[0].model_copy(
+        update={"teacher_uids": [teacher_uid]}
+    )
+
+    print(f"Seeding project: {PROJECT_ID}")
+    print(f"Teacher UID: {teacher_uid}")
+    print(f"Classroom: {classroom.name}")
+
+    db.collection("classrooms").document(classroom.id).set(
+        classroom.model_dump(mode="json")
+    )
+
+    for student in DEMO_STUDENTS:
+        db.collection("students").document(student.id).set(
+            student.model_dump(mode="json")
+        )
+
+    print(
+        f"Seeded 1 classroom and {len(DEMO_STUDENTS)} students successfully."
+    )
+
+
+if __name__ == "__main__":
+    main()

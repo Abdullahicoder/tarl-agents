@@ -37,6 +37,13 @@ const strings = {
   question: { en: 'Question', sw: 'Swali' },
   listenAgain: { en: 'Listen again', sw: 'Sikiliza tena' },
   back: { en: 'Back', sw: 'Rudi' },
+
+  // roster / connection states — a learner must be told when the class list
+  // cannot be loaded, never quietly shown a different set of names
+  noConnection: { en: 'No connection', sw: 'Hakuna mtandao' },
+  cannotLoadClass: { en: 'Cannot load your class', sw: 'Imeshindwa kupakia darasa lako' },
+  askYourTeacher: { en: 'Ask your teacher for help', sw: 'Muulize mwalimu wako akusaidie' },
+  noStudentsYet: { en: 'No learners in this class yet', sw: 'Hakuna wanafunzi katika darasa hili bado' },
   next: { en: 'Next', sw: 'Endelea' },
   finish: { en: 'Finish', sw: 'Maliza' },
   wellDone: { en: 'Well done!', sw: 'Umefanya vizuri!' },

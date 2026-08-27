@@ -16,8 +16,8 @@ def run_tests():
     # 4-year-old Beginner
     preschooler = Student(
         id="s1", name="Amina", age=4, 
-        literacy_level=LiteracyLevel.BEGINNER, 
-        numeracy_level=NumeracyLevel.SINGLE_DIGIT
+        english_literacy_level=LiteracyLevel.BEGINNER, swahili_literacy_level=LiteracyLevel.BEGINNER, 
+        numeracy_level=NumeracyLevel.ONE_DIGIT
     )
     print(f"\n[+] Testing Preschooler: {preschooler.name} (Age {preschooler.age}, Level: {preschooler.literacy_level.value})")
     ex1 = generate_targeted_exercise(preschooler, subject="literacy")
@@ -29,8 +29,8 @@ def run_tests():
     # 10-year-old Beginner
     older_student = Student(
         id="s2", name="Samuel", age=10, 
-        literacy_level=LiteracyLevel.BEGINNER, 
-        numeracy_level=NumeracyLevel.SINGLE_DIGIT
+        english_literacy_level=LiteracyLevel.BEGINNER, swahili_literacy_level=LiteracyLevel.BEGINNER, 
+        numeracy_level=NumeracyLevel.ONE_DIGIT
     )
     print(f"[+] Testing Older Child: {older_student.name} (Age {older_student.age}, Level: {older_student.literacy_level.value})")
     ex2 = generate_targeted_exercise(older_student, subject="literacy")
@@ -46,8 +46,8 @@ def run_tests():
     cohort = [
         preschooler,
         older_student,
-        Student(id="s3", name="Kofi", age=9, literacy_level=LiteracyLevel.WORD, numeracy_level=NumeracyLevel.ADDITION),
-        Student(id="s4", name="Zainab", age=8, literacy_level=LiteracyLevel.STORY, numeracy_level=NumeracyLevel.DIVISION)
+        Student(id="s3", name="Kofi", age=9, english_literacy_level=LiteracyLevel.WORD, swahili_literacy_level=LiteracyLevel.WORD, numeracy_level=NumeracyLevel.ADDITION),
+        Student(id="s4", name="Zainab", age=8, english_literacy_level=LiteracyLevel.STORY, swahili_literacy_level=LiteracyLevel.STORY, numeracy_level=NumeracyLevel.DIVISION)
     ]
 
     print(f"\n[+] Analyzing Cohort of {len(cohort)} Students...")

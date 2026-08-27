@@ -1,24 +1,44 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Environment / secrets
+.env
+.env.*
+!.env.example
+!.env.template
 
-node_modules
-dist
-dist-ssr
-*.local
+# Firebase / Google credentials
+service-account*.json
+*-service-account.json
+firebase-adminsdk*.json
+credentials.json
+secrets/
+.secret/
+*.pem
+*.key
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Build output
+dist/
+build/
+coverage/
+
+# Local tooling
+.vscode/
+.idea/
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+*.log
+
+# Firebase local tooling
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak

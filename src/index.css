@@ -31,8 +31,11 @@
   --radius-tile: 28px;
   --radius-stage: 36px;
 
+  /* The learner app is rounded and warm; the teacher app is a work tool and
+     uses a neutral UI face. Two registers, one token file. */
   --font-display: 'Nunito', 'Segoe UI Rounded', system-ui, sans-serif;
   --font-sans: 'Nunito', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-ui: 'Inter', system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
   --shadow-tile: 0 10px 0 0 rgb(0 0 0 / 0.07);
   --shadow-stage: 0 24px 60px -28px rgb(20 32 46 / 0.35);

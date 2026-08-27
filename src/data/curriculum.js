@@ -44,15 +44,15 @@ const literacyBank = {
     BEGINNER: [
       {
         type: 'LETTER_SOUND',
-        prompt: { en: 'Tap the letter that says "mmm"', sw: 'Gusa herufi inayosema "mmm"' },
-        say: { en: 'mmm', sw: 'mmm' },
+        prompt: { en: 'Tap the letter m', sw: 'Gusa herufi m' },
+        say: { en: 'm', sw: 'm' },
         options: ['m', 'a', 's'],
         correct: 'm',
       },
       {
         type: 'LETTER_SOUND',
-        prompt: { en: 'Tap the letter that says "aaa"', sw: 'Gusa herufi inayosema "aaa"' },
-        say: { en: 'aaa', sw: 'aaa' },
+        prompt: { en: 'Tap the letter a', sw: 'Gusa herufi a' },
+        say: { en: 'a', sw: 'a' },
         options: ['t', 'a', 'k'],
         correct: 'a',
       },
@@ -154,15 +154,15 @@ const literacyBank = {
     BEGINNER: [
       {
         type: 'LETTER_SOUND',
-        prompt: { en: 'Tap the letter that says "mmm"', sw: 'Gusa herufi inayosema "mmm"' },
-        say: { en: 'mmm', sw: 'mmm' },
+        prompt: { en: 'Tap the letter m', sw: 'Gusa herufi m' },
+        say: { en: 'm', sw: 'm' },
         options: ['m', 'a', 's'],
         correct: 'm',
       },
       {
         type: 'LETTER_SOUND',
-        prompt: { en: 'Tap the letter that says "aaa"', sw: 'Gusa herufi inayosema "aaa"' },
-        say: { en: 'aaa', sw: 'aaa' },
+        prompt: { en: 'Tap the letter a', sw: 'Gusa herufi a' },
+        say: { en: 'a', sw: 'a' },
         options: ['t', 'a', 'k'],
         correct: 'a',
       },
@@ -379,7 +379,10 @@ export function literacyItemsFor(level, lang = 'sw') {
   return pickBank(bank, LITERACY_LEVELS, level)
 }
 
-export function numeracyItemsFor(level, lang = 'sw') {
+export function numeracyItemsFor(level, _lang = 'sw') {
+  // The numeracy bank is bilingual field-by-field ({ en, sw }) rather than
+  // split per language, so the renderer does the switching. The parameter is
+  // kept for signature symmetry with literacyItemsFor.
   return pickBank(numeracyBank, NUMERACY_LEVELS, level)
 }
 
@@ -388,7 +391,7 @@ export function storyItems(lang = 'sw') {
   return bank.STORY ?? literacyBank.sw.STORY
 }
 
-export function writingItems(lang = 'sw') {
+export function writingItems(_lang = 'sw') {
   return [
     { type: 'TRACE', prompt: { en: "Trace the letter 'g'", sw: "Fuatilia herufi 'g'" }, glyph: 'g' },
     { type: 'TRACE', prompt: { en: "Trace the letter 'a'", sw: "Fuatilia herufi 'a'" }, glyph: 'a' },
