@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from google.cloud import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 from shared.models.models import (
     AssessmentRecord,
@@ -55,7 +56,7 @@ class FirestoreDB:
     def list_classrooms_for_teacher(self, teacher_uid: str) -> List[Classroom]:
         docs = (
             self.db.collection("classrooms")
-            .where("teacher_uids", "array_contains", teacher_uid)
+            .where(filter=FieldFilter("teacher_uids", "array_contains", teacher_uid))
             .stream()
         )
         return [Classroom(**doc.to_dict()) for doc in docs]
@@ -71,7 +72,11 @@ class FirestoreDB:
         return Student(**doc.to_dict()) if doc.exists else None
 
     def list_students_in_class(self, class_id: str) -> List[Student]:
-        docs = self.db.collection("students").where("class_id", "==", class_id).stream()
+        docs = (
+            self.db.collection("students")
+            .where(filter=FieldFilter("class_id", "==", class_id))
+            .stream()
+        )
         return sorted(
             (Student(**doc.to_dict()) for doc in docs),
             key=lambda s: s.name.lower(),
@@ -90,7 +95,7 @@ class FirestoreDB:
     ) -> List[AssessmentRecord]:
         docs = (
             self.db.collection("assessments")
-            .where("student_id", "==", student_id)
+            .where(filter=FieldFilter("student_id", "==", student_id))
             .order_by("assessed_at", direction=firestore.Query.DESCENDING)
             .limit(limit)
             .stream()
@@ -102,7 +107,7 @@ class FirestoreDB:
     ) -> List[AssessmentRecord]:
         docs = (
             self.db.collection("assessments")
-            .where("class_id", "==", class_id)
+            .where(filter=FieldFilter("class_id", "==", class_id))
             .order_by("assessed_at", direction=firestore.Query.DESCENDING)
             .limit(limit)
             .stream()
@@ -120,8 +125,8 @@ class FirestoreDB:
     ) -> Optional[GroupingPlan]:
         docs = list(
             self.db.collection("grouping_plans")
-            .where("class_id", "==", class_id)
-            .where("subject", "==", subject.value)
+            .where(filter=FieldFilter("class_id", "==", class_id))
+            .where(filter=FieldFilter("subject", "==", subject.value))
             .order_by("generated_at", direction=firestore.Query.DESCENDING)
             .limit(1)
             .stream()

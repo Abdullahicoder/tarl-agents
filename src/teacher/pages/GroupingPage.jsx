@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTeacherApi } from '../api'
 import { useAsync } from '../../shared/useAsync'
@@ -28,22 +28,23 @@ export default function GroupingPage() {
   const students = useAsync(() => api.listStudents(classId), [api, classId])
   const saved = useAsync(() => api.getGrouping(classId, subject), [api, classId, subject])
 
-  const [groups, setGroups] = useState(null)
-  const [summary, setSummary] = useState('')
-  const [dirty, setDirty] = useState(false)
+  /**
+   * `draft` holds the teacher's in-progress edits and nothing else. The plan on
+   * screen is derived: the draft if there is one, otherwise whatever the server
+   * last saved. Copying the saved plan into state with an effect instead would
+   * mean a second render on every load, and a race where a slow fetch resolving
+   * after an edit silently discards that edit.
+   *
+   * A generated plan lands in `draft`, never on the server, until Save.
+   */
+  const [draft, setDraft] = useState(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState(null)
   const [actionError, setActionError] = useState(null)
 
-  // Adopt the saved plan when one exists; a generated plan replaces it in state
-  // only, never on the server, until the teacher saves.
-  useEffect(() => {
-    if (saved.data) {
-      setGroups(saved.data.groups)
-      setSummary(saved.data.teacher_summary ?? '')
-      setDirty(false)
-    }
-  }, [saved.data])
+  const groups = draft?.groups ?? saved.data?.groups ?? null
+  const summary = draft?.summary ?? saved.data?.teacher_summary ?? ''
+  const dirty = draft !== null
 
   const byId = useMemo(
     () => Object.fromEntries((students.data ?? []).map((s) => [s.id, s])),
@@ -68,9 +69,7 @@ export default function GroupingPage() {
     setStatus(null)
     try {
       const plan = await api.generateGrouping(classId, subject)
-      setGroups(plan.groups)
-      setSummary(plan.teacher_summary ?? '')
-      setDirty(true)
+      setDraft({ groups: plan.groups, summary: plan.teacher_summary ?? '' })
       setStatus('Recommendation ready — review it before saving.')
     } catch (err) {
       setActionError(err)
@@ -84,7 +83,7 @@ export default function GroupingPage() {
     setActionError(null)
     try {
       await api.saveGrouping(classId, { subject, groups, teacher_summary: summary })
-      setDirty(false)
+      setDraft(null)          // fall back to the server copy, which is now ours
       setStatus('Grouping saved.')
       saved.reload().catch(() => {})
     } catch (err) {
@@ -94,8 +93,18 @@ export default function GroupingPage() {
     }
   }
 
-  const move = (studentId, toIndex) => {
-    setGroups((current) => {
+  /** Every edit forks the currently displayed plan into the draft. */
+  const edit = (mutate) =>
+    setDraft((current) => {
+      const base = current ?? {
+        groups: saved.data?.groups ?? [],
+        summary: saved.data?.teacher_summary ?? '',
+      }
+      return { ...base, groups: mutate(base.groups) }
+    })
+
+  const move = (studentId, toIndex) =>
+    edit((current) => {
       const next = current.map((g) => ({
         ...g,
         student_ids: g.student_ids.filter((id) => id !== studentId),
@@ -103,32 +112,23 @@ export default function GroupingPage() {
       if (toIndex !== UNASSIGNED) next[Number(toIndex)].student_ids.push(studentId)
       return next
     })
-    setDirty(true)
-  }
 
-  const patchGroup = (index, patch) => {
-    setGroups((current) => current.map((g, i) => (i === index ? { ...g, ...patch } : g)))
-    setDirty(true)
-  }
+  const patchGroup = (index, patch) =>
+    edit((current) => current.map((g, i) => (i === index ? { ...g, ...patch } : g)))
 
-  const addGroup = () => {
-    setGroups((current) => [
-      ...(current ?? []),
+  const addGroup = () =>
+    edit((current) => [
+      ...current,
       {
-        group_name: `Group ${(current?.length ?? 0) + 1}`,
+        group_name: `Group ${current.length + 1}`,
         student_ids: [],
         focus_literacy: null,
         focus_numeracy: null,
         rationale: null,
       },
     ])
-    setDirty(true)
-  }
 
-  const removeGroup = (index) => {
-    setGroups((current) => current.filter((_, i) => i !== index))
-    setDirty(true)
-  }
+  const removeGroup = (index) => edit((current) => current.filter((_, i) => i !== index))
 
   const groupOptions = [
     ...(groups ?? []).map((g, i) => ({ value: String(i), label: g.group_name })),
@@ -158,7 +158,11 @@ export default function GroupingPage() {
           <Field label="Subject">
             <Select
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              onChange={(e) => {
+                setSubject(e.target.value)
+                setDraft(null)   // a draft belongs to the subject it was made for
+                setStatus(null)
+              }}
               options={SUBJECTS.map((s) => ({ value: s.value, label: s.label }))}
             />
           </Field>

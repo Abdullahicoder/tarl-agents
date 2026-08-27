@@ -1,0 +1,30 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "assessments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "student_id", "order": "ASCENDING" },
+        { "fieldPath": "assessed_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "assessments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "class_id", "order": "ASCENDING" },
+        { "fieldPath": "assessed_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "grouping_plans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "class_id", "order": "ASCENDING" },
+        { "fieldPath": "subject", "order": "ASCENDING" },
+        { "fieldPath": "generated_at", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

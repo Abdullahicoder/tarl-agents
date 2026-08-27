@@ -14,58 +14,99 @@ const SUBJECTS = ['LITERACY', 'NUMERACY', 'STORIES', 'WRITING']
 /**
  * Student application root.
  *
- * Routing is intentionally a small local state machine rather than a router:
- * the learner never types a URL, the app must work offline, and the teacher
- * and parent applications will be separate entry points (see CLAUDE.md §17).
+ * Routing is a small local state machine rather than a router: the learner
+ * never types a URL and the app must keep working when the connection drops.
+ *
+ * Session rule: the app ALWAYS starts at the picker. No student is selected
+ * from storage, so the next child to pick up the tablet is never dropped into
+ * the previous child's account. Back from Home clears the session and returns
+ * to the picker; Back inside an activity returns to Home.
  */
 export default function StudentApp() {
-  const [session, setSession] = useState(() => api.loadSession())
+  const [lang, setLang] = useState(() => api.getLanguage())
+  const [roster, setRoster] = useState(null)
+  const [rosterError, setRosterError] = useState(null)
+  const [session, setSession] = useState(null)
+  const [signingIn, setSigningIn] = useState(false)
+  const [signInError, setSignInError] = useState(null)
   const [screen, setScreen] = useState('HOME')
+  const [stars, setStars] = useState(0)
 
-  const t = useMemo(() => makeT(session.lang), [session.lang])
-  const { speak, repeat } = useSpeech(session.lang)
-
-  const students = useMemo(() => api.listStudents(), [])
-
-  const items = useMemo(() => {
-    if (!SUBJECTS.includes(screen)) return []
-    return api.nextRound(screen, session.levels)
-  }, [screen, session.levels])
-
-  const refresh = useCallback(() => setSession(api.loadSession()), [])
-
-  const handleAnswer = useCallback(
-    (payload) => {
-      api.recordAnswer(payload)
-      refresh()
-    },
-    [refresh],
-  )
-
-  const handleLanguage = useCallback(
-    (lang) => {
-      api.setLanguage(lang)
-      refresh()
-    },
-    [refresh],
-  )
+  const t = useMemo(() => makeT(lang), [lang])
+  const { speak, repeat } = useSpeech(lang)
 
   useEffect(() => {
-    document.documentElement.lang = session.lang
-  }, [session.lang])
+    document.documentElement.lang = lang
+  }, [lang])
 
-  if (!session.student) {
+  // Roster loads once per app start, for this device's class only.
+  useEffect(() => {
+    let cancelled = false
+    setRosterError(null)
+    api
+      .listStudents()
+      .then((list) => {
+        if (!cancelled) setRoster(list)
+      })
+      .catch((error) => {
+        if (!cancelled) setRosterError(error)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const items = useMemo(() => {
+    if (!session || !SUBJECTS.includes(screen)) return []
+    return api.nextRound(screen, session.levels, lang)
+  }, [screen, session, lang])
+
+  const handleLanguage = useCallback((next) => {
+    api.setLanguage(next)
+    setLang(next)
+  }, [])
+
+  const handlePick = useCallback(async (studentId) => {
+    setSigningIn(true)
+    setSignInError(null)
+    try {
+      const me = await api.signIn(studentId)
+      setSession(me)
+      setStars(me.stars ?? 0)
+      setScreen('HOME')
+    } catch (error) {
+      setSignInError(error)
+    } finally {
+      setSigningIn(false)
+    }
+  }, [])
+
+  /** Back from Home: end the session and return to the picker. */
+  const handleLeave = useCallback(() => {
+    api.signOut()
+    setSession(null)
+    setStars(0)
+    setScreen('HOME')
+  }, [])
+
+  const handleAnswer = useCallback((payload) => {
+    if (payload.correct) setStars((n) => n + 1)
+    // Fire-and-forget: a dropped answer must not interrupt a child mid-lesson.
+    // Until POST /student/answers exists this is a no-op — see api.js.
+    api.recordAnswer(payload).catch(() => {})
+  }, [])
+
+  if (!session) {
     return (
       <SignInScreen
-        students={students}
-        lang={session.lang}
+        students={roster ?? []}
+        loading={roster === null && !rosterError}
+        error={rosterError ?? signInError}
+        busy={signingIn}
+        lang={lang}
         t={t}
         onLanguageChange={handleLanguage}
-        onPick={(id) => {
-          api.signIn(id)
-          refresh()
-          setScreen('HOME')
-        }}
+        onPick={handlePick}
       />
     )
   }
@@ -76,30 +117,13 @@ export default function StudentApp() {
     <div className="flex min-h-full flex-col">
       <HeaderBar
         student={inActivity ? null : session.student}
-        stars={session.stars}
-        lang={session.lang}
+        stars={stars}
+        lang={lang}
         onLanguageChange={handleLanguage}
         onRepeatAudio={inActivity ? repeat : undefined}
-        onBack={
-          inActivity
-            ? () => setScreen('HOME')
-            : screen === 'REWARDS'
-              ? () => setScreen('HOME')
-              : session.student
-                ? () => {
-                    api.signOut()
-                    refresh()
-                    setScreen('HOME')
-                  }
-                : undefined
-        }
-        title={
-          inActivity
-            ? t(screen === 'WRITING' ? 'writing' : screen.toLowerCase())
-            : screen === 'REWARDS'
-              ? t('stars')
-              : null
-        }
+        onBack={inActivity ? () => setScreen('HOME') : handleLeave}
+        backLabel={inActivity ? t('back') : t('whoIsLearning')}
+        title={inActivity ? t(screen === 'WRITING' ? 'writing' : screen.toLowerCase()) : null}
       />
 
       <main className="flex-1">
@@ -107,9 +131,9 @@ export default function StudentApp() {
           <HomeScreen
             student={session.student}
             levels={session.levels}
-            starsToday={session.starsToday}
-            dailyGoal={session.dailyGoal}
-            lang={session.lang}
+            starsToday={stars}
+            dailyGoal={session.dailyGoal ?? 10}
+            lang={lang}
             t={t}
             onOpen={setScreen}
           />
@@ -120,7 +144,7 @@ export default function StudentApp() {
             key={screen}
             subject={screen}
             items={items}
-            lang={session.lang}
+            lang={lang}
             t={t}
             speak={speak}
             onAnswer={handleAnswer}
@@ -128,17 +152,7 @@ export default function StudentApp() {
           />
         )}
 
-        {screen === 'REWARDS' && (
-          <RewardsScreen
-            stars={session.stars}
-            lang={session.lang}
-            t={t}
-            onReset={() => {
-              api.resetProgress()
-              refresh()
-            }}
-          />
-        )}
+        {screen === 'REWARDS' && <RewardsScreen stars={stars} lang={lang} t={t} />}
       </main>
 
       <NavigationDock
