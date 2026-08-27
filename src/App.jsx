@@ -29,7 +29,7 @@ export default function StudentApp() {
 
   const items = useMemo(() => {
     if (!SUBJECTS.includes(screen)) return []
-    return api.nextRound(screen, session.levels, session.lang)
+    return api.nextRound(screen, session.levels)
   }, [screen, session.levels])
 
   const refresh = useCallback(() => setSession(api.loadSession()), [])
@@ -49,13 +49,6 @@ export default function StudentApp() {
     },
     [refresh],
   )
-
-
-  const handleSwitchStudent = useCallback(() => {
-    api.signOut()
-    refresh()
-    setScreen('HOME')
-  }, [refresh])
 
   useEffect(() => {
     document.documentElement.lang = session.lang
@@ -87,9 +80,26 @@ export default function StudentApp() {
         lang={session.lang}
         onLanguageChange={handleLanguage}
         onRepeatAudio={inActivity ? repeat : undefined}
-        onBack={inActivity ? () => setScreen('HOME') : undefined}
-        onSwitchStudent={!inActivity ? handleSwitchStudent : undefined}
-        title={inActivity ? t(screen === 'WRITING' ? 'writing' : screen.toLowerCase()) : null}
+        onBack={
+          inActivity
+            ? () => setScreen('HOME')
+            : screen === 'REWARDS'
+              ? () => setScreen('HOME')
+              : session.student
+                ? () => {
+                    api.signOut()
+                    refresh()
+                    setScreen('HOME')
+                  }
+                : undefined
+        }
+        title={
+          inActivity
+            ? t(screen === 'WRITING' ? 'writing' : screen.toLowerCase())
+            : screen === 'REWARDS'
+              ? t('stars')
+              : null
+        }
       />
 
       <main className="flex-1">
@@ -123,6 +133,10 @@ export default function StudentApp() {
             stars={session.stars}
             lang={session.lang}
             t={t}
+            onReset={() => {
+              api.resetProgress()
+              refresh()
+            }}
           />
         )}
       </main>

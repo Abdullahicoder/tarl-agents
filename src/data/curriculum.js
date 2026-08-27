@@ -6,268 +6,128 @@
  * presentational component. Do not import it directly from a component;
  * always go through `api.js`.
  *
- * Level taxonomies mirror the deterministic engine in `shared/level_engine`.
+ * Level keys are the CANONICAL WIRE VALUES from `src/shared/levels.js`, which
+ * mirrors `shared/models/models.py`. They are not a second taxonomy.
  */
 
-export const LITERACY_LEVELS = ['BEGINNER', 'LETTER', 'WORD', 'PARAGRAPH', 'STORY']
+import {
+  LITERACY_LEVELS,
+  NUMERACY_LEVELS,
+  LEVEL_LABELS,
+} from '../shared/levels'
 
-export const NUMERACY_LEVELS = [
-  'BEGINNER',
-  'ONE_DIGIT',
-  'TWO_DIGIT',
-  'ADDITION',
-  'SUBTRACTION',
-  'MULTIPLICATION',
-  'DIVISION',
-]
-
-export const LEVEL_LABELS = {
-  BEGINNER: { en: 'Beginner', sw: 'Mwanzo' },
-  LETTER: { en: 'Letters', sw: 'Herufi' },
-  WORD: { en: 'Words', sw: 'Maneno' },
-  PARAGRAPH: { en: 'Paragraphs', sw: 'Aya' },
-  STORY: { en: 'Stories', sw: 'Hadithi' },
-  ONE_DIGIT: { en: '1-digit numbers', sw: 'Tarakimu moja' },
-  TWO_DIGIT: { en: '2-digit numbers', sw: 'Tarakimu mbili' },
-  ADDITION: { en: 'Addition', sw: 'Kujumlisha' },
-  SUBTRACTION: { en: 'Subtraction', sw: 'Kutoa' },
-  MULTIPLICATION: { en: 'Multiplication', sw: 'Kuzidisha' },
-  DIVISION: { en: 'Division', sw: 'Kugawanya' },
-}
+export { LITERACY_LEVELS, NUMERACY_LEVELS, LEVEL_LABELS }
 
 /* ------------------------------------------------------------------ */
 /* Literacy item banks, keyed by TaRL level                            */
 /* ------------------------------------------------------------------ */
 
 const literacyBank = {
-  sw: {
-    BEGINNER: [
-      {
-        type: 'LETTER_SOUND',
-        prompt: { en: 'Tap the letter that says "mmm"', sw: 'Gusa herufi inayosema "mmm"' },
-        say: { en: 'mmm', sw: 'mmm' },
-        options: ['m', 'a', 's'],
-        correct: 'm',
+  Beginner: [
+    {
+      type: 'LETTER_SOUND',
+      prompt: { en: 'Tap the letter that says "m"', sw: 'Gusa herufi inayosema "m"' },
+      say: { en: 'm', sw: 'm' },
+      options: ['m', 'a', 's'],
+      correct: 'm',
+    },
+    {
+      type: 'LETTER_SOUND',
+      prompt: { en: 'Tap the letter that says "a"', sw: 'Gusa herufi inayosema "a"' },
+      say: { en: 'a', sw: 'a' },
+      options: ['t', 'a', 'k'],
+      correct: 'a',
+    },
+  ],
+  Letter: [
+    {
+      type: 'LETTER_SOUND',
+      prompt: { en: 'Find the letter K', sw: 'Tafuta herufi K' },
+      say: { en: 'K', sw: 'K' },
+      options: ['k', 'b', 'd', 'p'],
+      correct: 'k',
+    },
+    {
+      type: 'BUILD_WORD',
+      prompt: { en: 'Build the word "mti"', sw: 'Tunga neno "mti"' },
+      say: { en: 'mti — tree', sw: 'mti' },
+      word: 'mti',
+      pool: ['m', 't', 'i', 'a', 'k'],
+    },
+    {
+      type: 'TRACE',
+      prompt: { en: "Trace the letter 'a'", sw: "Fuatilia herufi 'a'" },
+      glyph: 'a',
+    },
+  ],
+  Word: [
+    {
+      type: 'WORD_PICTURE',
+      prompt: { en: 'Which picture is "kuku"?', sw: 'Picha gani ni "kuku"?' },
+      say: { en: 'kuku — chicken', sw: 'kuku' },
+      options: [
+        { id: 'chicken', art: 'chicken', label: 'kuku' },
+        { id: 'tree', art: 'tree', label: 'mti' },
+        { id: 'cup', art: 'cup', label: 'chai' },
+      ],
+      correct: 'chicken',
+    },
+    {
+      type: 'BUILD_WORD',
+      prompt: { en: 'Build the word "chai"', sw: 'Tunga neno "chai"' },
+      say: { en: 'chai — tea', sw: 'chai' },
+      word: 'chai',
+      pool: ['c', 'h', 'a', 'i', 'u', 'k'],
+    },
+    {
+      type: 'WORD_PICTURE',
+      prompt: { en: 'Which picture is "mti"?', sw: 'Picha gani ni "mti"?' },
+      say: { en: 'mti — tree', sw: 'mti' },
+      options: [
+        { id: 'cup', art: 'cup', label: 'chai' },
+        { id: 'tree', art: 'tree', label: 'mti' },
+        { id: 'chicken', art: 'chicken', label: 'kuku' },
+      ],
+      correct: 'tree',
+    },
+  ],
+  Paragraph: [
+    {
+      type: 'FILL_PHRASE',
+      prompt: { en: 'Complete the phrase', sw: 'Kamilisha sentensi' },
+      before: 'Bata na',
+      after: 'wanacheza.',
+      options: ['kuku', 'kima'],
+      correct: 'kuku',
+    },
+  ],
+  Story: [
+    {
+      type: 'STORY',
+      title: { en: 'The Wise Tortoise', sw: 'Kobe Mwerevu' },
+      body: {
+        en: 'Long ago the forest pool dried up. Every animal was thirsty. A small tortoise walked slowly to the hill and found new water under a flat stone. She called all the animals, and nobody went thirsty again.',
+        sw: 'Hapo zamani za kale dimbwi la msituni lilikauka. Kila mnyama alikuwa na kiu. Kobe mdogo alitembea taratibu hadi kilimani na akapata maji mapya chini ya jiwe bapa. Aliwaita wanyama wote, na hakuna aliyekuwa na kiu tena.',
       },
-      {
-        type: 'LETTER_SOUND',
-        prompt: { en: 'Tap the letter that says "aaa"', sw: 'Gusa herufi inayosema "aaa"' },
-        say: { en: 'aaa', sw: 'aaa' },
-        options: ['t', 'a', 'k'],
-        correct: 'a',
+      question: {
+        en: 'Who found the water?',
+        sw: 'Nani alipata maji?',
       },
-    ],
-
-    LETTER: [
-      {
-        type: 'LETTER_SOUND',
-        prompt: { en: 'Find the letter K', sw: 'Tafuta herufi K' },
-        say: { en: 'K', sw: 'K' },
-        options: ['k', 'b', 'd', 'p'],
-        correct: 'k',
+      options: {
+        en: ['The tortoise', 'The chicken', 'The duck'],
+        sw: ['Kobe', 'Kuku', 'Bata'],
       },
-      {
-        type: 'BUILD_WORD',
-        prompt: { en: 'Build the word "chai"', sw: 'Tunga neno "chai"' },
-        say: { en: 'chai', sw: 'chai' },
-        word: { en: 'chai', sw: 'chai' },
-        pool: {
-          en: ['c', 'h', 'a', 'i', 'u'],
-          sw: ['c', 'h', 'a', 'i', 'u'],
-        },
-      },
-      {
-        type: 'TRACE',
-        prompt: { en: "Trace the letter 'a'", sw: "Fuatilia herufi 'a'" },
-        glyph: 'a',
-      },
-    ],
-
-    WORD: [
-      {
-        type: 'WORD_PICTURE',
-        prompt: { en: 'Which picture is "kuku"?', sw: 'Picha gani ni "kuku"?' },
-        say: { en: 'kuku', sw: 'kuku' },
-        options: [
-          { id: 'chicken', art: 'chicken', label: { en: 'chicken', sw: 'kuku' } },
-          { id: 'tree', art: 'tree', label: { en: 'tree', sw: 'mti' } },
-          { id: 'cup', art: 'cup', label: { en: 'tea', sw: 'chai' } },
-        ],
-        correct: 'chicken',
-      },
-      {
-        type: 'BUILD_WORD',
-        prompt: { en: 'Build the word "chai"', sw: 'Tunga neno "chai"' },
-        say: { en: 'chai', sw: 'chai' },
-        word: { en: 'chai', sw: 'chai' },
-        pool: {
-          en: ['c', 'h', 'a', 'i', 'u'],
-          sw: ['c', 'h', 'a', 'i', 'u'],
-        },
-      },
-      {
-        type: 'WORD_PICTURE',
-        prompt: { en: 'Which picture is "mti"?', sw: 'Picha gani ni "mti"?' },
-        say: { en: 'mti', sw: 'mti' },
-        options: [
-          { id: 'cup', art: 'cup', label: { en: 'tea', sw: 'chai' } },
-          { id: 'tree', art: 'tree', label: { en: 'tree', sw: 'mti' } },
-          { id: 'chicken', art: 'chicken', label: { en: 'chicken', sw: 'kuku' } },
-        ],
-        correct: 'tree',
-      },
-    ],
-
-    PARAGRAPH: [
-      {
-        type: 'FILL_PHRASE',
-        prompt: { en: 'Complete the phrase', sw: 'Kamilisha sentensi' },
-        before: 'Bata na',
-        after: 'wanacheza.',
-        options: ['kuku', 'kima'],
-        correct: 'kuku',
-      },
-    ],
-
-    STORY: [
-      {
-        type: 'STORY',
-        title: { en: 'Kobe Mwerevu', sw: 'Kobe Mwerevu' },
-        body: {
-          en: 'Hapo zamani za kale dimbwi la msituni lilikauka. Kila mnyama alikuwa na kiu. Kobe mdogo alipata maji mapya chini ya jiwe na akawaita wanyama wote.',
-          sw: 'Hapo zamani za kale dimbwi la msituni lilikauka. Kila mnyama alikuwa na kiu. Kobe mdogo alipata maji mapya chini ya jiwe na akawaita wanyama wote.',
-        },
-        question: {
-          en: 'Nani alipata maji?',
-          sw: 'Nani alipata maji?',
-        },
-        options: {
-          en: ['Kobe', 'Kuku', 'Bata'],
-          sw: ['Kobe', 'Kuku', 'Bata'],
-        },
-        correctIndex: 0,
-      },
-    ],
-  },
-
-  en: {
-    BEGINNER: [
-      {
-        type: 'LETTER_SOUND',
-        prompt: { en: 'Tap the letter that says "mmm"', sw: 'Gusa herufi inayosema "mmm"' },
-        say: { en: 'mmm', sw: 'mmm' },
-        options: ['m', 'a', 's'],
-        correct: 'm',
-      },
-      {
-        type: 'LETTER_SOUND',
-        prompt: { en: 'Tap the letter that says "aaa"', sw: 'Gusa herufi inayosema "aaa"' },
-        say: { en: 'aaa', sw: 'aaa' },
-        options: ['t', 'a', 'k'],
-        correct: 'a',
-      },
-    ],
-
-    LETTER: [
-      {
-        type: 'LETTER_SOUND',
-        prompt: { en: 'Find the letter K', sw: 'Tafuta herufi K' },
-        say: { en: 'K', sw: 'K' },
-        options: ['k', 'b', 'd', 'p'],
-        correct: 'k',
-      },
-      {
-        type: 'BUILD_WORD',
-        prompt: { en: 'Build the word "tea"', sw: 'Tunga neno "chai"' },
-        say: { en: 'tea', sw: 'chai' },
-        word: { en: 'tea', sw: 'chai' },
-        pool: {
-          en: ['t', 'e', 'a', 'i', 'o'],
-          sw: ['c', 'h', 'a', 'i', 'u'],
-        },
-      },
-      {
-        type: 'TRACE',
-        prompt: { en: "Trace the letter 'a'", sw: "Fuatilia herufi 'a'" },
-        glyph: 'a',
-      },
-    ],
-
-    WORD: [
-      {
-        type: 'WORD_PICTURE',
-        prompt: { en: 'Which picture is "chicken"?', sw: 'Picha gani ni "kuku"?' },
-        say: { en: 'chicken', sw: 'kuku' },
-        options: [
-          { id: 'chicken', art: 'chicken', label: { en: 'chicken', sw: 'kuku' } },
-          { id: 'tree', art: 'tree', label: { en: 'tree', sw: 'mti' } },
-          { id: 'cup', art: 'cup', label: { en: 'tea', sw: 'chai' } },
-        ],
-        correct: 'chicken',
-      },
-      {
-        type: 'BUILD_WORD',
-        prompt: { en: 'Build the word "tea"', sw: 'Tunga neno "chai"' },
-        say: { en: 'tea', sw: 'chai' },
-        word: { en: 'tea', sw: 'chai' },
-        pool: {
-          en: ['t', 'e', 'a', 'i', 'o'],
-          sw: ['c', 'h', 'a', 'i', 'u'],
-        },
-      },
-      {
-        type: 'WORD_PICTURE',
-        prompt: { en: 'Which picture is "tree"?', sw: 'Picha gani ni "mti"?' },
-        say: { en: 'tree', sw: 'mti' },
-        options: [
-          { id: 'cup', art: 'cup', label: { en: 'tea', sw: 'chai' } },
-          { id: 'tree', art: 'tree', label: { en: 'tree', sw: 'mti' } },
-          { id: 'chicken', art: 'chicken', label: { en: 'chicken', sw: 'kuku' } },
-        ],
-        correct: 'tree',
-      },
-    ],
-
-    PARAGRAPH: [
-      {
-        type: 'FILL_PHRASE',
-        prompt: { en: 'Complete the sentence', sw: 'Kamilisha sentensi' },
-        before: 'The duck and',
-        after: 'are playing.',
-        options: ['chicken', 'monkey'],
-        correct: 'chicken',
-      },
-    ],
-
-    STORY: [
-      {
-        type: 'STORY',
-        title: { en: 'The Wise Tortoise', sw: 'Kobe Mwerevu' },
-        body: {
-          en: 'Long ago the forest pool dried up. Every animal was thirsty. A small tortoise found new water under a flat stone and called all the animals.',
-          sw: 'Hapo zamani za kale dimbwi la msituni lilikauka. Kila mnyama alikuwa na kiu. Kobe mdogo alipata maji mapya chini ya jiwe na akawaita wanyama wote.',
-        },
-        question: {
-          en: 'Who found the water?',
-          sw: 'Nani alipata maji?',
-        },
-        options: {
-          en: ['The tortoise', 'The chicken', 'The duck'],
-          sw: ['Kobe', 'Kuku', 'Bata'],
-        },
-        correctIndex: 0,
-      },
-    ],
-  },
+      correctIndex: 0,
+    },
+  ],
 }
-
 
 /* ------------------------------------------------------------------ */
 /* Numeracy item banks, keyed by TaRL level                            */
 /* ------------------------------------------------------------------ */
 
 const numeracyBank = {
-  BEGINNER: [
+  Beginner: [
     {
       type: 'COUNT',
       prompt: { en: 'How many oranges?', sw: 'Machungwa mangapi?' },
@@ -285,7 +145,7 @@ const numeracyBank = {
       correct: '5',
     },
   ],
-  ONE_DIGIT: [
+  '1-Digit Number': [
     {
       type: 'COMPARE',
       prompt: { en: 'Which number is bigger?', sw: 'Namba gani ni kubwa?' },
@@ -301,7 +161,7 @@ const numeracyBank = {
       correct: '6',
     },
   ],
-  TWO_DIGIT: [
+  '2-Digit Number': [
     {
       type: 'COMPARE',
       prompt: { en: 'Which number is bigger?', sw: 'Namba gani ni kubwa?' },
@@ -317,7 +177,7 @@ const numeracyBank = {
       correct: '25',
     },
   ],
-  ADDITION: [
+  Addition: [
     {
       type: 'SUM',
       prompt: { en: 'Work it out', sw: 'Hesabu' },
@@ -328,7 +188,7 @@ const numeracyBank = {
       correct: '14',
     },
   ],
-  SUBTRACTION: [
+  Subtraction: [
     {
       type: 'SUM',
       prompt: { en: 'Work it out', sw: 'Hesabu' },
@@ -339,7 +199,7 @@ const numeracyBank = {
       correct: '11',
     },
   ],
-  MULTIPLICATION: [
+  Multiplication: [
     {
       type: 'SUM',
       prompt: { en: 'Work it out', sw: 'Hesabu' },
@@ -350,7 +210,7 @@ const numeracyBank = {
       correct: '24',
     },
   ],
-  DIVISION: [
+  Division: [
     {
       type: 'SUM',
       prompt: { en: 'Work it out', sw: 'Hesabu' },
@@ -374,21 +234,19 @@ function pickBank(bank, order, level) {
   return bank[order[0]] ?? []
 }
 
-export function literacyItemsFor(level, lang = 'sw') {
-  const bank = literacyBank[lang] ?? literacyBank.sw
-  return pickBank(bank, LITERACY_LEVELS, level)
+export function literacyItemsFor(level) {
+  return pickBank(literacyBank, LITERACY_LEVELS, level)
 }
 
-export function numeracyItemsFor(level, lang = 'sw') {
+export function numeracyItemsFor(level) {
   return pickBank(numeracyBank, NUMERACY_LEVELS, level)
 }
 
-export function storyItems(lang = 'sw') {
-  const bank = literacyBank[lang] ?? literacyBank.sw
-  return bank.STORY ?? literacyBank.sw.STORY
+export function storyItems() {
+  return literacyBank.Story
 }
 
-export function writingItems(lang = 'sw') {
+export function writingItems() {
   return [
     { type: 'TRACE', prompt: { en: "Trace the letter 'g'", sw: "Fuatilia herufi 'g'" }, glyph: 'g' },
     { type: 'TRACE', prompt: { en: "Trace the letter 'a'", sw: "Fuatilia herufi 'a'" }, glyph: 'a' },

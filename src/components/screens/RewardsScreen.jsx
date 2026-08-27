@@ -2,7 +2,7 @@ import Art from '../ui/Art'
 import { Panel, ProgressBar } from '../ui/primitives'
 import { REWARD_COLLECTION } from '../../data/curriculum'
 
-export default function RewardsScreen({ stars, lang, t }) {
+export default function RewardsScreen({ stars, lang, t, onReset }) {
   const next = REWARD_COLLECTION.find((r) => r.cost > stars)
 
   return (
@@ -47,6 +47,16 @@ export default function RewardsScreen({ stars, lang, t }) {
           })}
         </ul>
       </Panel>
+
+      <div className="text-center">
+        <button
+          type="button"
+          onClick={onReset}
+          className="press rounded-full border-2 border-ink/10 bg-stage px-6 py-3 text-sm font-extrabold text-ink-soft"
+        >
+          ↺
+        </button>
+      </div>
     </div>
   )
 }

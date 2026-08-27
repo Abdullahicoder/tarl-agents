@@ -34,7 +34,7 @@ const DEFAULT_STATE = {
   starsToday: 0,
   dailyGoal: 10,
   streak: 1,
-  levels: { literacy: 'WORD', numeracy: 'ONE_DIGIT' },
+  levels: { literacy: 'Word', numeracy: '1-Digit Number' },
   history: [],
 }
 
@@ -88,16 +88,16 @@ export function setLanguage(lang) {
  * Replaced by: POST /tutor/next-activity { studentId, subject }
  * The server picks items from the learner's deterministic TaRL level.
  */
-export function nextRound(subject, levels, lang = 'sw') {
+export function nextRound(subject, levels) {
   switch (subject) {
     case 'LITERACY':
-      return literacyItemsFor(levels.literacy, lang)
+      return literacyItemsFor(levels.literacy)
     case 'NUMERACY':
-      return numeracyItemsFor(levels.numeracy, lang)
+      return numeracyItemsFor(levels.numeracy)
     case 'STORIES':
-      return storyItems(lang)
+      return storyItems()
     case 'WRITING':
-      return writingItems(lang)
+      return writingItems()
     default:
       return []
   }

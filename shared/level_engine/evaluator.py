@@ -1,5 +1,6 @@
-from typing import Dict, Any
 from pydantic import BaseModel, Field
+
+from shared.models.models import LiteracyLevel, NumeracyLevel
 
 
 class LanguageAssessmentInput(BaseModel):
@@ -28,55 +29,59 @@ class AssessmentInput(BaseModel):
 
 
 class TaRLEvaluationResult(BaseModel):
-    english_literacy_level: str
-    swahili_literacy_level: str
-    numeracy_level: str
+    # Typed as the canonical enums so an out-of-taxonomy string can never leave
+    # the engine. This is what previously broke: the engine returned
+    # "1-Digit Number" while NumeracyLevel declared "Single Digit", so building
+    # a Student from a result raised ValidationError.
+    english_literacy_level: LiteracyLevel
+    swahili_literacy_level: LiteracyLevel
+    numeracy_level: NumeracyLevel
     english_summary: str
     swahili_summary: str
     numeracy_summary: str
 
 
-def evaluate_language_level(assessment: LanguageAssessmentInput) -> str:
+def evaluate_language_level(assessment: LanguageAssessmentInput) -> LiteracyLevel:
     """
     Deterministic TaRL Literacy Progression:
     Story -> Paragraph -> Word -> Letter -> Beginner
     Threshold: >= 80% (e.g., 4/5) on discrete items.
     """
     if assessment.story_passed:
-        return "Story"
+        return LiteracyLevel.STORY
     if assessment.paragraph_passed:
-        return "Paragraph"
+        return LiteracyLevel.PARAGRAPH
     
     if (assessment.words_correct / assessment.words_total) >= 0.8:
-        return "Word"
+        return LiteracyLevel.WORD
     
     if (assessment.letters_correct / assessment.letters_total) >= 0.8:
-        return "Letter"
-    
-    return "Beginner"
+        return LiteracyLevel.LETTER
+
+    return LiteracyLevel.BEGINNER
 
 
-def evaluate_numeracy_level(assessment: AssessmentInput) -> str:
+def evaluate_numeracy_level(assessment: AssessmentInput) -> NumeracyLevel:
     """
     Deterministic TaRL Numeracy Progression:
     Division -> Multiplication -> Subtraction -> Addition -> 2-Digit -> 1-Digit -> Beginner
     """
     if assessment.division_passed:
-        return "Division"
+        return NumeracyLevel.DIVISION
     if assessment.multiplication_passed:
-        return "Multiplication"
+        return NumeracyLevel.MULTIPLICATION
     if assessment.subtraction_passed:
-        return "Subtraction"
+        return NumeracyLevel.SUBTRACTION
     if assessment.addition_passed:
-        return "Addition"
+        return NumeracyLevel.ADDITION
     
     if (assessment.double_digit_correct / assessment.double_digit_total) >= 0.8:
-        return "2-Digit Number"
+        return NumeracyLevel.TWO_DIGIT
     
     if (assessment.single_digit_correct / assessment.single_digit_total) >= 0.8:
-        return "1-Digit Number"
-    
-    return "Beginner"
+        return NumeracyLevel.ONE_DIGIT
+
+    return NumeracyLevel.BEGINNER
 
 
 def evaluate_student_tarl_levels(assessment: AssessmentInput) -> TaRLEvaluationResult:
