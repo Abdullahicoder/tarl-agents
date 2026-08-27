@@ -21,9 +21,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from agents.classroom_agent.agent import generate_classroom_groups
-from agents.tutor_agent.agent import generate_tutor_prompt
+from agents.lesson_agent.agent import LessonPlan
+from agents.lesson_agent.service import (
+    UnknownLevelError,
+    curriculum_for,
+    generate_lesson_plan,
+)
 from shared.auth.dependencies import require_teacher
-from shared.curriculum.levels import get_level_curriculum
+from shared.memory import build_group_context
 from shared.data_access.firestore_client import FirestoreDB, new_id, utc_now
 from shared.level_engine.evaluator import AssessmentInput, evaluate_student_tarl_levels
 from shared.models.models import (
@@ -442,54 +447,102 @@ async def get_grouping(
 # ---------------------------------------------------------------------------
 
 
-class LessonPlan(BaseModel):
+class LessonPlanResponse(BaseModel):
+    """What the teacher sees.
+
+    The split matters: `verified_level` and the curriculum fields are
+    deterministic facts, `plan` is a Gemini recommendation. The UI must render
+    them differently so a teacher never reads a suggestion as an assigned level.
+    """
+
     subject: Subject
-    target_level: str
     group_name: str
-    objectives: List[str]
-    skills: List[str]
-    activities: List[str]
-    assessment_criteria: str
-    tutor_prompt: str
+
+    # deterministic
+    verified_level: str
+    curriculum_objectives: List[str]
+    curriculum_skills: List[str]
+    curriculum_activities: List[str]
+    curriculum_assessment_criteria: str
+
+    # AI recommendation — reviewed by the teacher, never persisted from here
+    plan: LessonPlan
+    generated_from_student_ids: List[str]
+    evidence_count: int
 
 
-@router.post("/classes/{class_id}/lesson-plan", response_model=LessonPlan)
+@router.post("/classes/{class_id}/lesson-plan", response_model=LessonPlanResponse)
 async def build_lesson_plan(
     class_id: str,
     body: LessonPlanRequest,
     user: Dict[str, Any] = Depends(require_teacher),
 ):
-    """Assemble a plan from the curriculum for one group's target level.
+    """Build a lesson recommendation for one saved group.
 
-    Curriculum content is deterministic; only the tutor prompt is LLM-facing,
-    and it is returned for the teacher to read rather than executed here.
+        saved grouping -> student ids -> GroupContext -> curriculum
+                       -> lesson agent -> LessonPlan
+
+    The group's membership comes from the SAVED plan, not from the request, so
+    a caller cannot ask for a lesson about students they do not teach. Nothing
+    is persisted: the teacher reviews the recommendation and remains the
+    decision-maker.
     """
     assert_teacher_owns_class(user, class_id)
 
-    domain = "numeracy" if body.subject is Subject.NUMERACY else "literacy"
-    curriculum = get_level_curriculum(domain, body.target_level, language=body.subject.value)
-
-    if curriculum.level_name != body.target_level:
+    saved = get_db().get_latest_grouping_plan(class_id, body.subject)
+    if saved is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Unknown {domain} level: {body.target_level}",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Save a grouping for this subject before building plans",
         )
 
-    prompt = generate_tutor_prompt(
-        student_name=body.group_name or "this group",
-        english_level=body.target_level,
-        swahili_level=body.target_level,
-        numeracy_level=body.target_level,
-        subject=body.subject.value,
+    group = next(
+        (g for g in saved.groups if g.group_name == body.group_name),
+        None,
     )
+    if group is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No group named {body.group_name!r} in the saved grouping",
+        )
 
-    return LessonPlan(
+    try:
+        context = build_group_context(
+            db=get_db(),
+            class_id=class_id,
+            group_name=group.group_name,
+            subject=body.subject.value,
+            student_ids=group.student_ids,
+            target_level=body.target_level,
+        )
+        curriculum = curriculum_for(body.subject.value, body.target_level)
+    except UnknownLevelError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+
+    try:
+        plan = await generate_lesson_plan(context)
+    except Exception as exc:  # noqa: BLE001 — surfaced to the teacher as 503
+        logger.exception("Lesson agent failed for class %s", class_id)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Lesson recommendation unavailable: {exc}",
+        ) from exc
+
+    return LessonPlanResponse(
         subject=body.subject,
-        target_level=body.target_level,
-        group_name=body.group_name,
-        objectives=curriculum.objectives,
-        skills=curriculum.skills,
-        activities=curriculum.sample_activities,
-        assessment_criteria=curriculum.assessment_criteria,
-        tutor_prompt=prompt,
+        group_name=group.group_name,
+        verified_level=body.target_level,
+        curriculum_objectives=curriculum.objectives,
+        curriculum_skills=curriculum.skills,
+        curriculum_activities=curriculum.sample_activities,
+        curriculum_assessment_criteria=curriculum.assessment_criteria,
+        plan=plan,
+        generated_from_student_ids=[s.student_id for s in context.students],
+        evidence_count=len(context.recent_assessment_evidence),
     )

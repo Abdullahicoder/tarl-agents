@@ -38,6 +38,12 @@ class AssessmentEvidence(BaseModel):
     assessment_id: str
     assessed_at: str
 
+    # Group context interleaves evidence from several children. Without these
+    # the model reads "works best with concrete objects" as a fact about the
+    # group rather than about Zainab, and differentiation becomes impossible.
+    student_id: str
+    student_name: str
+
     recommended_english_level: str
     recommended_swahili_level: str
     recommended_numeracy_level: str
@@ -121,10 +127,15 @@ def _level_value(value: Any) -> str:
     return value.value if hasattr(value, "value") else str(value)
 
 
-def _assessment_to_context(record: AssessmentRecord) -> AssessmentEvidence:
+def _assessment_to_context(
+    record: AssessmentRecord,
+    student_name: str = "",
+) -> AssessmentEvidence:
     return AssessmentEvidence(
         assessment_id=record.assessment_id,
         assessed_at=record.assessed_at,
+        student_id=record.student_id,
+        student_name=student_name,
         recommended_english_level=_level_value(
             record.recommended_english_level
         ),
@@ -154,11 +165,13 @@ def _trajectory(
     # Assessments are expected newest-first from Firestore.
     previous = assessments[1] if len(assessments) > 1 else None
 
-    notes = [
-        record.teacher_note
-        for record in assessments
-        if record.teacher_note
-    ]
+    notes = list(
+        dict.fromkeys(
+            record.teacher_note
+            for record in assessments
+            if record.teacher_note
+        )
+    )
 
     return LearningTrajectory(
         current_english_level=current_english,
@@ -301,7 +314,7 @@ def build_student_context(
         },
         trajectory=_trajectory(student, assessments),
         recent_assessments=[
-            _assessment_to_context(record)
+            _assessment_to_context(record, student.name)
             for record in assessments
         ],
     )
@@ -378,12 +391,15 @@ def build_group_context(
         )
 
         evidence.extend(
-            _assessment_to_context(record)
+            _assessment_to_context(record, student.name)
             for record in records
         )
 
+        # Notes are prefixed with the child they are about. A bare list of
+        # notes cannot be acted on: "needs concrete objects first" is only
+        # useful if the teacher knows who it describes.
         teacher_notes.extend(
-            record.teacher_note
+            f"{student.name}: {record.teacher_note}"
             for record in records
             if record.teacher_note
         )

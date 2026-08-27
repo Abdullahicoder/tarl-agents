@@ -19,6 +19,13 @@
  * and the session token it mints is the only thing that can read a record.
  */
 
+/**
+ * The classroom tablet's access code. Provisioned per device, sent on every
+ * student route. It is not a per-child secret — it stops an outsider reading a
+ * class roster or opening a session by guessing a student id.
+ */
+const CLASS_CODE = import.meta.env.VITE_STUDENT_CLASS_CODE ?? ''
+
 const ROUTES = {
   roster: (classId) => `/student/classes/${encodeURIComponent(classId)}/roster`,
   session: '/student/session',
@@ -59,11 +66,13 @@ export class StudentApiError extends Error {
 }
 
 async function request(path, { method = 'GET', body, auth = false } = {}) {
-  const headers = { Accept: 'application/json' }
+  const headers = { Accept: 'application/json', 'X-Class-Code': CLASS_CODE }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (auth) {
     if (!sessionToken) throw new StudentApiError('No student session', 401)
-    headers.Authorization = `Bearer ${sessionToken}`
+    // Not `Bearer`: this is a device-scoped learner session, not a Firebase
+    // identity, and the server distinguishes the two by scheme.
+    headers.Authorization = `StudentSession ${sessionToken}`
   }
 
   let response

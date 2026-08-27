@@ -54,7 +54,7 @@ export default function LessonPlansPage() {
       <PageHeader
         eyebrow="Class"
         title="Lesson plans"
-        description="One plan per group, built from the TaRL curriculum for that group's level. The objectives and activities are fixed by the curriculum; only the tutor prompt is AI-facing."
+        description="The verified level and its curriculum are fixed by the TaRL rules. The lesson itself is an AI recommendation built from your class's assessment evidence — review it before you teach it."
       />
 
       <div className="mb-6 w-56">
@@ -81,7 +81,7 @@ export default function LessonPlansPage() {
       {grouping.data && (
         <div className="flex flex-col gap-4">
           {grouping.data.groups.map((group) => {
-            const plan = plans[group.group_name]
+            const response = plans[group.group_name]
             const level = focusOf(group)
             return (
               <Card key={group.group_name}>
@@ -108,43 +108,125 @@ export default function LessonPlansPage() {
                   </div>
                 </div>
 
-                {plan && (
-                  <div className="mt-4 grid gap-5 border-t border-ink/10 pt-4 sm:grid-cols-2">
-                    <div>
-                      <h3 className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
-                        Objectives
-                      </h3>
-                      <ul className="mt-2 list-disc pl-5 text-sm">
-                        {plan.objectives.map((objective) => (
-                          <li key={objective}>{objective}</li>
-                        ))}
-                      </ul>
-                      <h3 className="mt-4 text-xs font-semibold tracking-wide text-ink-soft uppercase">
-                        Skills
-                      </h3>
-                      <p className="mt-1 text-sm">{plan.skills.join(' · ')}</p>
+                {response && (
+                  <div className="mt-4 border-t border-ink/10 pt-4">
+                    {/* Deterministic facts and an AI recommendation must not
+                        look alike. A teacher who reads a suggestion as an
+                        assigned level is the failure this page exists to
+                        prevent. */}
+                    <div className="mb-5 rounded-xl border border-ink/10 bg-page p-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge tone="neutral">Verified TaRL level</Badge>
+                        <span className="text-sm font-bold">
+                          {levelLabel(response.verified_level)}
+                        </span>
+                        <span className="text-xs text-ink-soft">
+                          set by assessment, not by AI
+                        </span>
+                      </div>
+                      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <h4 className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
+                            Curriculum scope
+                          </h4>
+                          <ul className="mt-1.5 list-disc pl-5 text-sm">
+                            {response.curriculum_objectives.map((o) => (
+                              <li key={o}>{o}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
+                            Ready when
+                          </h4>
+                          <p className="mt-1.5 text-sm">
+                            {response.curriculum_assessment_criteria}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
-                        Activities
-                      </h3>
-                      <ul className="mt-2 list-disc pl-5 text-sm">
-                        {plan.activities.map((activity) => (
-                          <li key={activity}>{activity}</li>
-                        ))}
-                      </ul>
-                      <h3 className="mt-4 text-xs font-semibold tracking-wide text-ink-soft uppercase">
-                        You will know they are ready when
-                      </h3>
-                      <p className="mt-1 text-sm">{plan.assessment_criteria}</p>
+
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <Badge tone="ai">AI recommendation</Badge>
+                      <span className="text-xs text-ink-soft">
+                        from {response.generated_from_student_ids.length} learners
+                        {' · '}
+                        {response.evidence_count} assessment records
+                      </span>
                     </div>
-                    <details className="sm:col-span-2">
+
+                    <h3 className="text-lg font-bold">{response.plan.title}</h3>
+                    <p className="text-xs text-ink-soft">
+                      {response.plan.duration_minutes} minutes
+                    </p>
+
+                    <div className="mt-4 grid gap-5 sm:grid-cols-2">
+                      <div>
+                        <h4 className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
+                          Objectives
+                        </h4>
+                        <ul className="mt-2 list-disc pl-5 text-sm">
+                          {response.plan.objectives.map((o) => (
+                            <li key={o}>{o}</li>
+                          ))}
+                        </ul>
+
+                        <h4 className="mt-4 text-xs font-semibold tracking-wide text-ink-soft uppercase">
+                          Skills
+                        </h4>
+                        <p className="mt-1 text-sm">{response.plan.skills.join(' · ')}</p>
+
+                        <h4 className="mt-4 text-xs font-semibold tracking-wide text-ink-soft uppercase">
+                          Activities
+                        </h4>
+                        <ul className="mt-2 list-disc pl-5 text-sm">
+                          {response.plan.activities.map((a) => (
+                            <li key={a}>{a}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div>
+                        {response.plan.differentiation.length > 0 && (
+                          <>
+                            <h4 className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
+                              Differentiation
+                            </h4>
+                            <ul className="mt-2 list-disc pl-5 text-sm">
+                              {response.plan.differentiation.map((d) => (
+                                <li key={d}>{d}</li>
+                              ))}
+                            </ul>
+                          </>
+                        )}
+
+                        {response.plan.teacher_prompts.length > 0 && (
+                          <>
+                            <h4 className="mt-4 text-xs font-semibold tracking-wide text-ink-soft uppercase">
+                              What to say
+                            </h4>
+                            <ul className="mt-2 flex flex-col gap-1.5 text-sm">
+                              {response.plan.teacher_prompts.map((p) => (
+                                <li key={p} className="italic">“{p}”</li>
+                              ))}
+                            </ul>
+                          </>
+                        )}
+
+                        <h4 className="mt-4 text-xs font-semibold tracking-wide text-ink-soft uppercase">
+                          End-of-lesson check
+                        </h4>
+                        <p className="mt-1 text-sm">{response.plan.assessment_criteria}</p>
+                      </div>
+                    </div>
+
+                    <details className="mt-4">
                       <summary className="cursor-pointer text-xs text-ink-soft">
-                        Tutor prompt sent to the AI for this group
+                        Why the AI suggested this
                       </summary>
-                      <pre className="mt-2 overflow-x-auto rounded-lg bg-page p-3 text-xs whitespace-pre-wrap">
-                        {plan.tutor_prompt}
-                      </pre>
+                      <p className="mt-2 rounded-lg bg-page p-3 text-sm">
+                        {response.plan.rationale}
+                      </p>
                     </details>
                   </div>
                 )}

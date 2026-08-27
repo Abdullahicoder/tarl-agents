@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from deploy.teacher_api import router as teacher_router
 from deploy.student_api import router as student_router
-from deploy.student_api import router as student_router
 from shared.auth.dependencies import require_teacher
 from shared.level_engine.evaluator import AssessmentInput, evaluate_student_tarl_levels
 
@@ -33,7 +32,6 @@ app.add_middleware(
 )
 
 app.include_router(teacher_router)
-app.include_router(student_router)
 app.include_router(student_router)
 
 
